@@ -1,0 +1,49 @@
+// Prisma schema: single source of truth for DB shape.
+// We use PostgreSQL + UUID PKs for merge-friendly IDs at scale (sharding-friendly patterns later).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  schedules Schedule[]
+
+  @@map("users")
+}
+
+model Schedule {
+  id        String   @id @default(uuid()) @db.Uuid
+  topic     String
+  active    Boolean  @default(true)
+  userId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("schedules")
+}
+
+enum ProblemDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model Problem {
+  id         String            @id @default(uuid()) @db.Uuid
+  title      String
+  difficulty ProblemDifficulty
+  createdAt  DateTime          @default(now())
+
+  @@map("problems")
+}
