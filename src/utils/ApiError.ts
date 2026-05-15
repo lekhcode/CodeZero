@@ -65,4 +65,9 @@ export class ApiError extends Error {
   static conflict(message: string): ApiError {
     return new ApiError(409, message, { code: "CONFLICT" });
   }
+
+  /** Redis down, BullMQ unreachable, or other dependency outage. */
+  static serviceUnavailable(message: string): ApiError {
+    return new ApiError(503, message, { code: "SERVICE_UNAVAILABLE" });
+  }
 }

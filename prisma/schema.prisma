@@ -78,9 +78,103 @@ model User {
   currentAccessToken String? @db.Text
   createdAt          DateTime @default(now())
 
-  userSchedules UserSchedule[]
+  userSchedules        UserSchedule[]
+  compilerSubmissions  CompilerSubmission[]
+  judgeSubmissions     JudgeSubmission[]
+  solvedProblems       UserProblemSolve[]
 
   @@map("users")
+}
+
+// ---------------------------------------------------------------------------
+// Compiler / code execution (isolated domain — API → queue → Docker workers).
+// ---------------------------------------------------------------------------
+
+enum SubmissionStatus {
+  QUEUED
+  RUNNING
+  ACCEPTED
+  WRONG_ANSWER
+  RUNTIME_ERROR
+  COMPILATION_ERROR
+  TIME_LIMIT_EXCEEDED
+  INTERNAL_ERROR
+}
+
+model CompilerSubmission {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String?          @db.Uuid
+  language  String
+  code      String           @db.Text
+  stdin     String?          @db.Text
+  stdout    String?          @db.Text
+  stderr    String?          @db.Text
+  status    SubmissionStatus @default(QUEUED)
+  runtimeMs Int?
+  memoryKb  Int?
+  exitCode  Int?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("compiler_submissions")
+}
+
+/** Online judge: sample (visible) vs full (all testcases). */
+enum JudgeMode {
+  RUN_SAMPLE
+  FULL_JUDGE
+}
+
+/**
+ * User submission for problem-based judge (not playground stdin).
+ * Processed by compiler worker via BullMQ.
+ */
+model JudgeSubmission {
+  id           String           @id @default(uuid()) @db.Uuid
+  userId       String           @db.Uuid
+  problemId    String           @db.Uuid
+  language     String
+  code         String           @db.Text
+  mode         JudgeMode
+  status       SubmissionStatus @default(QUEUED)
+  /** Per-testcase results: [{ index, passed, input?, expected?, actual?, error? }] */
+  testResults  Json?
+  stderr       String?          @db.Text
+  stdout       String?          @db.Text
+  runtimeMs        Int?
+  exitCode         Int?
+  codingDurationMs Int?
+  createdAt        DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([problemId])
+  @@index([status])
+  @@map("judge_submissions")
+}
+
+model UserProblemSolve {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @db.Uuid
+  problemId          String   @db.Uuid
+  solvedAt           DateTime @default(now())
+  solvedSubmissionId String   @db.Uuid
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId])
+  @@index([userId])
+  @@index([problemId])
+  @@map("user_problem_solves")
 }
 
 // ---------------------------------------------------------------------------
@@ -111,9 +205,51 @@ model Problem {
   /** Calendar rows when this problem was LeetCode POTD (one row per challenge date). */
   dailyPotdEntries   DailyPotd[]
   /** Study plans / topics that include this problem (Blind 75, NeetCode 150, …). */
-  templateProblems TemplateProblem[]
+  templateProblems   TemplateProblem[]
+  codeTemplates      ProblemCodeTemplate[]
+  judgeTestcases     ProblemTestcase[]
+  judgeSubmissions   JudgeSubmission[]
+  userSolves         UserProblemSolve[]
 
   @@map("problems")
+}
+
+/** Per-language starter body; user never writes main() — harness is generated. */
+model ProblemCodeTemplate {
+  id           String   @id @default(uuid()) @db.Uuid
+  problemId    String   @db.Uuid
+  language     String
+  starterCode  String   @db.Text
+  functionName String
+  /**
+   * Optional JSON array of argument type hints for C++/Java judges, e.g. ["int[]","int","String"].
+   * Required for C++/Java judge harness codegen when not using interpreted languages.
+   */
+  judgeArgHints String? @db.Text
+  createdAt    DateTime @default(now())
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([problemId, language])
+  @@index([problemId])
+  @@map("problem_code_templates")
+}
+
+/** Testcases for judge; visible ones run on “Run”, all run on “Submit”. */
+model ProblemTestcase {
+  id             String   @id @default(uuid()) @db.Uuid
+  problemId      String   @db.Uuid
+  /** JSON string: {\"args\":[...]} — function arguments excluding `self`. */
+  input          String   @db.Text
+  /** JSON string of expected return value */
+  expectedOutput String   @db.Text
+  isHidden       Boolean  @default(false)
+  orderIndex     Int
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@index([problemId, orderIndex])
+  @@map("problem_testcases")
 }
 
 /**

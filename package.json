@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "compiler:worker": "tsx src/compiler/workers/bootstrap.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
@@ -20,6 +21,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "sync:blind-75": "tsx scripts/sync-study-plan.ts blind-75",
     "sync:top-interview-150": "tsx scripts/sync-study-plan.ts top-interview-150",
+    "test:compiler": "node scripts/test-compiler.mjs http://localhost:2026",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -28,7 +30,9 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "bullmq": "^5.67.2",
     "bcrypt": "^6.0.0",
+    "ioredis": "^5.9.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",

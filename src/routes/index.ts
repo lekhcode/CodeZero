@@ -6,6 +6,9 @@ import { scheduleTemplatesRouter } from "../modules/scheduleTemplates/scheduleTe
 import { userSchedulesRouter } from "../modules/userSchedules/userSchedules.routes.js";
 import { authRouter } from "../modules/auth/auth.routes.js";
 import { usersRouter } from "../modules/users/users.routes.js";
+import { compilerRouter } from "../compiler/api/compiler.routes.js";
+import { problemByIdAdminRouter } from "../compiler/api/adminJudge.routes.js";
+import { judgePollRouter } from "../compiler/api/judgePoll.routes.js";
 import { rootRouter } from "./health.routes.js";
 
 /**
@@ -25,6 +28,9 @@ apiV1.use("/assignments", assignmentsRouter);
 apiV1.use("/plans", plansRouter);
 apiV1.use("/daily-problem", leetcodeRouter);
 apiV1.use("/problems", problemsRouter);
+apiV1.use("/problems/by-id", problemByIdAdminRouter);
+apiV1.use("/judge", judgePollRouter);
+apiV1.use("/compiler", compilerRouter);
 
 routes.use("/api/v1", apiV1);
 routes.use(rootRouter);

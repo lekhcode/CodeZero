@@ -1,4 +1,5 @@
 import type { ErrorRequestHandler } from "express";
+import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
 import { ApiError } from "../utils/ApiError.js";
 import { HttpError } from "../utils/httpError.js";
@@ -19,13 +20,6 @@ function resolveStatus(err: unknown): number {
 }
 
 function buildClientErrorPayload(err: unknown, status: number): Record<string, unknown> {
-  if (status >= 500) {
-    return {
-      success: false as const,
-      error: { message: "Internal Server Error", code: "INTERNAL_ERROR" },
-    };
-  }
-
   if (err instanceof ApiError) {
     const payload: Record<string, unknown> = {
       success: false as const,
@@ -41,6 +35,23 @@ function buildClientErrorPayload(err: unknown, status: number): Record<string, u
       errorObj["details"] = err.details;
     }
     return payload;
+  }
+
+  if (status >= 500) {
+    if (!env.isProduction && err instanceof Error && err.message.trim() !== "") {
+      return {
+        success: false as const,
+        error: {
+          message: err.message,
+          code: "INTERNAL_ERROR",
+          hint: "Detailed message shown because NODE_ENV is not production. Check API logs for the full stack.",
+        },
+      };
+    }
+    return {
+      success: false as const,
+      error: { message: "Internal Server Error", code: "INTERNAL_ERROR" },
+    };
   }
 
   if (err instanceof HttpError) {
@@ -73,7 +84,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   const status = resolveStatus(err);
   const body = buildClientErrorPayload(err, status);
 
-  if (status >= 500) {
+  if (status >= 500 && !(err instanceof ApiError)) {
     logger.error({ err, status }, "unhandled server error");
   }
 

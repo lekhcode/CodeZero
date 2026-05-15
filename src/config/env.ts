@@ -50,6 +50,22 @@ const jwtExpiresInTrimmed =
 const jwtExpiresIn: string =
   jwtExpiresInTrimmed === "" ? "7d" : jwtExpiresInTrimmed;
 
+const redisUrlRaw = process.env["REDIS_URL"];
+const redisUrl =
+  redisUrlRaw === undefined || redisUrlRaw === ""
+    ? "redis://127.0.0.1:6379"
+    : redisUrlRaw;
+
+function parsePositiveInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    throw new Error(`Invalid ${name}: ${raw}`);
+  }
+  return Math.floor(n);
+}
+
 export const env = {
   NODE_ENV: nodeEnv,
   isProduction,
@@ -59,4 +75,15 @@ export const env = {
   CORS_ORIGINS: corsOrigins,
   JWT_SECRET: jwtSecret,
   JWT_EXPIRES_IN: jwtExpiresIn,
+  /** BullMQ + compiler workers (isolated execution domain) */
+  REDIS_URL: redisUrl,
+  COMPILER_QUEUE_NAME: process.env["COMPILER_QUEUE_NAME"] ?? "compiler-execution",
+  COMPILER_JOB_ATTEMPTS: parsePositiveInt("COMPILER_JOB_ATTEMPTS", 3),
+  COMPILER_JOB_TIMEOUT_MS: parsePositiveInt("COMPILER_JOB_TIMEOUT_MS", 30_000),
+  COMPILER_EXECUTION_TIMEOUT_SEC: parsePositiveInt("COMPILER_EXECUTION_TIMEOUT_SEC", 10),
+  COMPILER_DOCKER_MEMORY: process.env["COMPILER_DOCKER_MEMORY"] ?? "256m",
+  COMPILER_DOCKER_CPUS: process.env["COMPILER_DOCKER_CPUS"] ?? "0.5",
+  COMPILER_DOCKER_PIDS_LIMIT: parsePositiveInt("COMPILER_DOCKER_PIDS_LIMIT", 64),
+  COMPILER_MAX_CODE_BYTES: parsePositiveInt("COMPILER_MAX_CODE_BYTES", 65_536),
+  COMPILER_STALE_RUNNING_MS: parsePositiveInt("COMPILER_STALE_RUNNING_MS", 600_000),
 } as const;
