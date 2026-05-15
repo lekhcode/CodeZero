@@ -5,45 +5,150 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Connection URL lives in `prisma.config.ts` (Prisma ORM 7+) so Migrate and the JS driver share one source of truth.
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Scheduling: template-driven (NOT a generic todo row).
+// `ScheduleTemplate` = catalog (POTD, topics, study plans, future AI plans).
+// `UserSchedule`     = user enrollment + per-user knobs (count, difficulty) where allowed.
+// ---------------------------------------------------------------------------
+
+enum ScheduleType {
+  DAILY_POTD
+  TOPIC
+  STUDY_PLAN
+}
+
+/** Per-user practice knobs; separate from `ProblemDifficulty` on the `Problem` model. */
+enum DifficultyLevel {
+  EASY
+  MEDIUM
+  HARD
+  MIXED
+}
+
+model ScheduleTemplate {
+  id               String       @id @default(uuid()) @db.Uuid
+  name             String
+  slug             String       @unique
+  type             ScheduleType
+  /** System rows ship with the product; user-defined templates can appear later (e.g. AI). */
+  isSystem         Boolean      @default(false)
+  allowsDifficulty Boolean      @default(true)
+  allowsCount      Boolean      @default(true)
+  /** Used when `allowsCount` is false (e.g. POTD always 1). */
+  defaultCount     Int?
+  createdAt        DateTime     @default(now())
+
+  userSchedules      UserSchedule[]
+  templateProblems   TemplateProblem[]
+
+  @@map("schedule_templates")
+}
+
+model UserSchedule {
+  id               String            @id @default(uuid()) @db.Uuid
+  userId           String            @db.Uuid
+  templateId       String            @db.Uuid
+  active           Boolean           @default(true)
+  dailyQuestions   Int?
+  difficulty       DifficultyLevel?
+  createdAt        DateTime          @default(now())
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+
+  /** One enrollment per user per template (e.g. cannot add "Binary Search" twice). */
+  @@unique([userId, templateId])
+  @@index([userId])
+  @@map("user_schedules")
 }
 
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
-  createdAt DateTime @default(now())
+  /** bcrypt hash — never returned from APIs; load only in auth flows that need verification */
+  password  String
+  /**
+   * Last issued access JWT (single session). `requireAuth` checks Bearer token === this value.
+   */
+  currentAccessToken String? @db.Text
+  createdAt          DateTime @default(now())
 
-  schedules Schedule[]
+  userSchedules UserSchedule[]
 
   @@map("users")
 }
 
-model Schedule {
-  id        String   @id @default(uuid()) @db.Uuid
-  topic     String
-  active    Boolean  @default(true)
-  userId    String   @db.Uuid
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("schedules")
-}
-
-enum ProblemDifficulty {
-  EASY
-  MEDIUM
-  HARD
-}
+// ---------------------------------------------------------------------------
+// LeetCode problem catalog (POTD sync today; full library sync later).
+// Normalized rows only — never store raw GraphQL payloads.
+// ---------------------------------------------------------------------------
 
 model Problem {
-  id         String            @id @default(uuid()) @db.Uuid
-  title      String
-  difficulty ProblemDifficulty
-  createdAt  DateTime          @default(now())
+  id          String          @id @default(uuid()) @db.Uuid
+  leetcodeId  Int             @unique
+  title       String
+  slug        String          @unique
+  difficulty  DifficultyLevel
+  topics      String[]
+  isPremium   Boolean         @default(false)
+
+  /** Full LeetCode `content` HTML — stored for re-parsing / AI; never returned from public APIs. */
+  rawContent       String? @db.Text
+  /** Plain-text statement extracted from HTML (best-effort). */
+  parsedStatement  String? @db.Text
+  /** Raw `exampleTestcases` string from LeetCode (newline-separated). */
+  exampleTestcases String? @db.Text
+  constraints      String[]
+  hints            String[]
+
+  createdAt   DateTime        @default(now())
+
+  /** Calendar rows when this problem was LeetCode POTD (one row per challenge date). */
+  dailyPotdEntries   DailyPotd[]
+  /** Study plans / topics that include this problem (Blind 75, NeetCode 150, …). */
+  templateProblems TemplateProblem[]
 
   @@map("problems")
+}
+
+/**
+ * Ordered problem list for a schedule template (Blind 75, NeetCode 150, Binary Search pool, …).
+ * Admin segregation: same `Problem` row can appear in multiple templates via separate links.
+ */
+model TemplateProblem {
+  id         String @id @default(uuid()) @db.Uuid
+  templateId String @db.Uuid
+  problemId  String @db.Uuid
+  /** 1-based display order within the plan (Blind 75 #1 … #75). */
+  order      Int
+
+  template ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  problem  Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, problemId])
+  @@unique([templateId, order])
+  @@index([problemId])
+  @@map("template_problems")
+}
+
+/**
+ * LeetCode daily challenge calendar: exactly one official POTD per `challengeDate`.
+ * Separates "was POTD on this day" from generic `problems` catalog (study plans come later).
+ */
+model DailyPotd {
+  id            String   @id @default(uuid()) @db.Uuid
+  /** LeetCode challenge date (from `activeDailyCodingChallengeQuestion.date`). */
+  challengeDate DateTime @unique @db.Date
+  problemId     String   @db.Uuid
+  createdAt     DateTime @default(now())
+
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Restrict)
+
+  @@index([problemId])
+  @@map("daily_potd")
 }

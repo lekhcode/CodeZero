@@ -33,6 +33,23 @@ const corsOrigins =
     ? []
     : corsOriginsRaw.split(",").map((s) => s.trim()).filter(Boolean);
 
+/**
+ * JWT signing secret. Must be long and random in production (e.g. `openssl rand -base64 32`).
+ * Day 2 uses access tokens only — no refresh rotation — so compromise of this secret invalidates all sessions.
+ * Always a string (from env); set in `.env` as a quoted string if you prefer.
+ */
+const jwtSecret: string = requireEnv("JWT_SECRET");
+
+/**
+ * `jsonwebtoken` `expiresIn` string (e.g. `"7d"`, `"24h"`, `"3600"`). Defaults for local dev convenience.
+ * Always normalized to string — set `JWT_EXPIRES_IN` in `.env` as a string literal.
+ */
+const jwtExpiresInRaw = process.env["JWT_EXPIRES_IN"];
+const jwtExpiresInTrimmed =
+  jwtExpiresInRaw === undefined ? "" : String(jwtExpiresInRaw).trim();
+const jwtExpiresIn: string =
+  jwtExpiresInTrimmed === "" ? "7d" : jwtExpiresInTrimmed;
+
 export const env = {
   NODE_ENV: nodeEnv,
   isProduction,
@@ -40,4 +57,6 @@ export const env = {
   /** Required once you run migrations / hit the DB */
   DATABASE_URL: requireEnv("DATABASE_URL"),
   CORS_ORIGINS: corsOrigins,
+  JWT_SECRET: jwtSecret,
+  JWT_EXPIRES_IN: jwtExpiresIn,
 } as const;

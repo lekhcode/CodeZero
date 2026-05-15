@@ -1,9 +1,10 @@
 import type { ErrorRequestHandler } from "express";
 import { logger } from "../config/logger.js";
+import { ApiError } from "../utils/ApiError.js";
 import { HttpError } from "../utils/httpError.js";
 
 function resolveStatus(err: unknown): number {
-  if (err instanceof HttpError) {
+  if (err instanceof ApiError || err instanceof HttpError) {
     return err.status;
   }
 
@@ -17,27 +18,64 @@ function resolveStatus(err: unknown): number {
   return 500;
 }
 
-function resolveClientMessage(err: unknown, status: number): string {
+function buildClientErrorPayload(err: unknown, status: number): Record<string, unknown> {
   if (status >= 500) {
-    return "Internal Server Error";
+    return {
+      success: false as const,
+      error: { message: "Internal Server Error", code: "INTERNAL_ERROR" },
+    };
   }
+
+  if (err instanceof ApiError) {
+    const payload: Record<string, unknown> = {
+      success: false as const,
+      error: {
+        message: err.message,
+      },
+    };
+    const errorObj = payload["error"] as Record<string, unknown>;
+    if (err.code !== undefined) {
+      errorObj["code"] = err.code;
+    }
+    if (err.details !== undefined && err.details.length > 0) {
+      errorObj["details"] = err.details;
+    }
+    return payload;
+  }
+
+  if (err instanceof HttpError) {
+    return {
+      success: false as const,
+      error: { message: err.message, code: "HTTP_ERROR" },
+    };
+  }
+
   if (err instanceof Error) {
-    return err.message;
+    return {
+      success: false as const,
+      error: { message: err.message, code: "ERROR" },
+    };
   }
-  return "Error";
+
+  return {
+    success: false as const,
+    error: { message: "Error", code: "ERROR" },
+  };
 }
 
 /**
  * Central error boundary. Keeps route handlers thin: throw or `next(err)` and format here.
- * Later: map Prisma error codes to HTTP status, add requestId, structured logs, etc.
+ *
+ * Day 2: `ApiError` carries optional `code` + validation `details` for machine-readable clients.
+ * Legacy `HttpError` remains supported for older call sites.
  */
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   const status = resolveStatus(err);
-  const message = resolveClientMessage(err, status);
+  const body = buildClientErrorPayload(err, status);
 
   if (status >= 500) {
     logger.error({ err, status }, "unhandled server error");
   }
 
-  res.status(status).json({ error: message });
+  res.status(status).json(body);
 };

@@ -9,7 +9,11 @@ import { routes } from "./routes/index.js";
 
 /**
  * Factory so tests (later) can spin up an isolated app without listening on a port.
+ *
  * Middleware order matters: CORS → request logger → body parsers → routers → 404 → error handler.
+ *
+ * Route registration: all HTTP paths mount through `./routes/index.js` (including `/api/v1/*`).
+ * Keep `createApp` free of feature routers so scaling to queues/AI/MCP stays a modules concern.
  */
 export function createApp(): express.Express {
   const app = express();
