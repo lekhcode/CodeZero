@@ -1,6 +1,7 @@
 import { SubmissionStatus } from "@prisma/client";
 import { JudgeMode } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
+import { markAssignmentsSolvedOnAccept } from "../../modules/assignments/assignmentTracking.service.js";
 
 export async function recordSolveIfAccepted(input: {
   judgeSubmissionId: string;
@@ -23,5 +24,11 @@ export async function recordSolveIfAccepted(input: {
       solvedSubmissionId: input.judgeSubmissionId,
     },
     update: {},
+  });
+
+  await markAssignmentsSolvedOnAccept({
+    userId: input.userId,
+    problemId: input.problemId,
+    judgeSubmissionId: input.judgeSubmissionId,
   });
 }

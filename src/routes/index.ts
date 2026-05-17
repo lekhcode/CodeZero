@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { assignmentsRouter } from "../modules/assignments/assignments.routes.js";
+import { userAssignmentsRouter } from "../modules/assignments/userAssignments.routes.js";
+import { submissionsRouter } from "../modules/submissions/submissions.routes.js";
 import { plansRouter } from "../modules/plans/plans.routes.js";
 import { leetcodeRouter, problemsRouter } from "../modules/leetcode/leetcode.routes.js";
 import { scheduleTemplatesRouter } from "../modules/scheduleTemplates/scheduleTemplates.routes.js";
@@ -22,6 +24,8 @@ export const routes = Router();
 const apiV1 = Router();
 apiV1.use("/auth", authRouter);
 apiV1.use("/users", usersRouter);
+apiV1.use("/users/me/assignments", userAssignmentsRouter);
+apiV1.use("/submissions", submissionsRouter);
 apiV1.use("/schedule-templates", scheduleTemplatesRouter);
 apiV1.use("/user-schedules", userSchedulesRouter);
 apiV1.use("/assignments", assignmentsRouter);

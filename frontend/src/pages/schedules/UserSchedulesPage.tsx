@@ -33,6 +33,8 @@ export function UserSchedulesPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.userSchedules });
       void queryClient.invalidateQueries({ queryKey: queryKeys.todayAssignments });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedToday });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedDue });
     },
   });
 
@@ -41,6 +43,8 @@ export function UserSchedulesPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.userSchedules });
       void queryClient.invalidateQueries({ queryKey: queryKeys.todayAssignments });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedToday });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedDue });
     },
   });
 

@@ -4,4 +4,9 @@
 export { requireAuth } from "./auth.middleware.js";
 export { errorHandler } from "./error.middleware.js";
 export { notFoundHandler } from "./notFound.middleware.js";
-export { validateBody, validateParams } from "./validate.middleware.js";
+export {
+  readValidatedQuery,
+  validateBody,
+  validateParams,
+  validateQuery,
+} from "./validate.middleware.js";

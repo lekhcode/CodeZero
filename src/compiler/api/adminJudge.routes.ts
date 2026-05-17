@@ -12,6 +12,7 @@ import * as ctrl from "./adminJudge.controller.js";
 /**
  * POST /api/v1/problems/by-id/:problemId/templates
  * POST /api/v1/problems/by-id/:problemId/testcases
+ *   Body: one testcase object, or a non-empty array of testcase objects.
  */
 export const problemByIdAdminRouter = Router();
 

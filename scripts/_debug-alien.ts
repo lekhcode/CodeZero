@@ -1,0 +1,11 @@
+﻿import "dotenv/config";
+import { prisma } from "../src/config/prisma.js";
+import { extractExamplesFromHtml } from "../src/modules/leetcode/leetcode.parser.js";
+const p = await prisma.problem.findUnique({ where: { slug: "alien-dictionary" }, select: { rawContent: true } });
+const html = p?.rawContent ?? "";
+const idx = html.indexOf("Example");
+console.log("has Example", idx >= 0);
+console.log("pre count", (html.match(/<pre/gi) || []).length);
+console.log(html.slice(idx, idx + 800));
+console.log("extracted", extractExamplesFromHtml(html));
+await prisma.$disconnect();

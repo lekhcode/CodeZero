@@ -108,3 +108,125 @@ export type CreateUserScheduleInput = {
   dailyQuestions?: number;
   difficulty?: DifficultyLevel;
 };
+
+export type TrackedAssignmentStatus = "PENDING" | "SOLVED" | "MISSED" | "SKIPPED";
+
+export type TrackedAssignment = {
+  id: string;
+  assignedDate: string;
+  status: TrackedAssignmentStatus;
+  solvedAt: string | null;
+  submissionCount: number;
+  userScheduleId: string;
+  scheduleName: string;
+  scheduleSlug: string;
+  scheduleType: ScheduleType;
+  problem: ProblemDetail;
+};
+
+export type LearningStats = {
+  solvedToday: number;
+  pendingToday: number;
+  dueCount: number;
+  totalAccepted: number;
+  totalSolved: number;
+  totalProblemsInCatalog: number;
+};
+
+export type TrackedTodayResponse = {
+  assignments: TrackedAssignment[];
+  stats: LearningStats;
+};
+
+export type TrackedDueResponse = {
+  assignments: TrackedAssignment[];
+};
+
+export type TrackedHistoryResponse = {
+  assignments: TrackedAssignment[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type SubmissionStatus =
+  | "QUEUED"
+  | "RUNNING"
+  | "ACCEPTED"
+  | "WRONG_ANSWER"
+  | "RUNTIME_ERROR"
+  | "COMPILATION_ERROR"
+  | "TIME_LIMIT_EXCEEDED"
+  | "INTERNAL_ERROR";
+
+export type JudgeMode = "RUN_SAMPLE" | "FULL_JUDGE";
+
+export type SubmissionListItem = {
+  id: string;
+  status: SubmissionStatus;
+  language: string;
+  mode: JudgeMode;
+  runtimeMs: number | null;
+  codingDurationMs: number | null;
+  createdAt: string;
+  /** Consecutive same-problem attempts merged into this row (newest kept). */
+  collapsedAttempts: number;
+  problem: {
+    slug: string;
+    title: string;
+    difficulty: string;
+  };
+};
+
+export type SubmissionsListResponse = {
+  submissions: SubmissionListItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  rawTotal: number;
+};
+
+export type ActivityDay = {
+  date: string;
+  count: number;
+  acceptedCount: number;
+};
+
+export type SubmissionActivitySummary = {
+  view: "rolling" | "calendar";
+  year: number | null;
+  rangeLabel: string;
+  availableYears: number[];
+  totalSubmissions: number;
+  activeDays: number;
+  maxStreak: number;
+  days: ActivityDay[];
+};
+
+export type DailyLearningPoint = {
+  date: string;
+  solvedCount: number;
+  acceptedCount: number;
+};
+
+export type LearningInsights = {
+  rangeDays: number;
+  dailyPoints: DailyLearningPoint[];
+  trend: "up" | "down" | "stable";
+  consistencyPercent: number;
+  totalSolvedInRange: number;
+  totalAcceptedInRange: number;
+  comparisonLabel: string;
+};
+
+export type SubmissionDetailResponse = {
+  submission: SubmissionListItem & {
+    code: string;
+    stdout: string | null;
+    stderr: string | null;
+    exitCode: number | null;
+    updatedAt: string;
+  };
+};

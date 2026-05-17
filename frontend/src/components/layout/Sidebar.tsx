@@ -14,6 +14,8 @@ import {
 } from "@mui/material";
 import { NavLink, useLocation } from "react-router-dom";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
+import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
+import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import ExploreRoundedIcon from "@mui/icons-material/ExploreRounded";
 import EventNoteRoundedIcon from "@mui/icons-material/EventNoteRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
@@ -26,7 +28,9 @@ const DRAWER_WIDTH = 260;
 const DRAWER_COLLAPSED = 72;
 
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: <DashboardRoundedIcon /> },
+  { to: "/dashboard", label: "Lab", icon: <DashboardRoundedIcon /> },
+  { to: "/today", label: "Today", icon: <TodayRoundedIcon /> },
+  { to: "/submissions", label: "Submissions", icon: <HistoryRoundedIcon /> },
   { to: "/templates", label: "Explore", icon: <ExploreRoundedIcon /> },
   { to: "/schedules", label: "My schedules", icon: <EventNoteRoundedIcon /> },
 ];
@@ -60,7 +64,7 @@ function NavContent({
                 variant="h6"
                 sx={{
                   fontWeight: 900,
-                  background: "linear-gradient(135deg, #4f46e5, #0ea5e9)",
+                  background: "linear-gradient(135deg, #FF6B00, #14B8A6)",
                   WebkitBackgroundClip: "text",
                   WebkitTextFillColor: "transparent",
                   lineHeight: 1.1,
@@ -99,9 +103,9 @@ function NavContent({
                 mb: 0.5,
                 justifyContent: collapsed ? "center" : "flex-start",
                 px: collapsed ? 1 : 2,
-                bgcolor: active ? alpha("#4f46e5", 0.1) : "transparent",
+                bgcolor: active ? alpha("#FF6B00", 0.1) : "transparent",
                 color: active ? "primary.main" : "text.primary",
-                "&:hover": { bgcolor: alpha("#4f46e5", 0.06) },
+                "&:hover": { bgcolor: alpha("#FF6B00", 0.06) },
               }}
             >
               <ListItemIcon

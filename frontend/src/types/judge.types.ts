@@ -17,6 +17,7 @@ export type JudgeMetaLanguage = {
   id: string;
   starterCode: string;
   functionName: string;
+  paramNames: string[];
   judgeReadyForLanguage: boolean;
 };
 
@@ -76,7 +77,13 @@ export type JudgeSubmission = {
   testResults: JudgeCaseResult[] | null;
   stdout: string | null;
   stderr: string | null;
+  /** Max testcase harness time (user code only). */
   runtimeMs: number | null;
+  queueTimeMs?: number | null;
+  compileTimeMs?: number | null;
+  executionTimeMs?: number | null;
+  totalTimeMs?: number | null;
+  sandboxWallMs?: number | null;
   exitCode: number | null;
   createdAt: string;
   updatedAt: string;

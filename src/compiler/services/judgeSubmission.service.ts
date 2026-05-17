@@ -130,6 +130,11 @@ export async function finalizeJudgeSubmission(
     stdout: string;
     stderr: string;
     runtimeMs: number;
+    queueTimeMs: number;
+    compileTimeMs: number;
+    executionTimeMs: number;
+    totalTimeMs: number;
+    sandboxWallMs: number;
     exitCode: number;
   },
 ): Promise<void> {
@@ -141,6 +146,11 @@ export async function finalizeJudgeSubmission(
       stdout: data.stdout,
       stderr: data.stderr,
       runtimeMs: data.runtimeMs,
+      queueTimeMs: data.queueTimeMs,
+      compileTimeMs: data.compileTimeMs,
+      executionTimeMs: data.executionTimeMs,
+      totalTimeMs: data.totalTimeMs,
+      sandboxWallMs: data.sandboxWallMs,
       exitCode: data.exitCode,
     },
   });
@@ -184,7 +194,20 @@ export async function loadJudgeSubmissionForWorker(id: string): Promise<{
   };
 }
 
-export async function processJudgeWorkerJob(judgeSubmissionId: string): Promise<void> {
+export async function processJudgeWorkerJob(
+  judgeSubmissionId: string,
+  meta: { workerPickedAt?: number } = {},
+): Promise<void> {
+  const workerPickedAt = meta.workerPickedAt ?? Date.now();
+
+  const queuedRow = await prisma.judgeSubmission.findUnique({
+    where: { id: judgeSubmissionId },
+    select: { createdAt: true },
+  });
+  const queueTimeMs = queuedRow
+    ? Math.max(0, workerPickedAt - queuedRow.createdAt.getTime())
+    : 0;
+
   const payload = await loadJudgeSubmissionForWorker(judgeSubmissionId);
   if (payload === null) {
     compilerLogger.warn({ judgeSubmissionId }, "judge job skipped");
@@ -192,8 +215,10 @@ export async function processJudgeWorkerJob(judgeSubmissionId: string): Promise<
   }
 
   await markJudgeRunning(judgeSubmissionId);
+  compilerLogger.info({ judgeSubmissionId, queueTimeMs }, "judge worker picked job");
 
   try {
+    const prepStart = Date.now();
     const template = await prisma.problemCodeTemplate.findUnique({
       where: { problemId_language: { problemId: payload.problemId, language: payload.language } },
     });
@@ -224,6 +249,7 @@ export async function processJudgeWorkerJob(judgeSubmissionId: string): Promise<
     }));
 
     const cppHints = parseJudgeArgHints(template.judgeArgHints);
+    const workerPrepMs = Date.now() - prepStart;
 
     const summary = await executeJudgeInDocker({
       jobId: judgeSubmissionId,
@@ -234,12 +260,36 @@ export async function processJudgeWorkerJob(judgeSubmissionId: string): Promise<
       cppHints: payload.language === "cpp" ? cppHints : null,
     });
 
+    const totalTimeMs = queuedRow
+      ? Math.max(0, Date.now() - queuedRow.createdAt.getTime())
+      : queueTimeMs + workerPrepMs + summary.workspaceMs + summary.sandboxWallMs;
+
+    compilerLogger.info(
+      {
+        judgeSubmissionId,
+        queueTimeMs,
+        workerPrepMs,
+        workspaceMs: summary.workspaceMs,
+        sandboxWallMs: summary.sandboxWallMs,
+        compileTimeMs: summary.compileTimeMs,
+        executionTimeMs: summary.executionTimeMs,
+        totalTimeMs,
+        status: summary.status,
+      },
+      "judge timing breakdown",
+    );
+
     await finalizeJudgeSubmission(judgeSubmissionId, {
       status: summary.status,
       testResults: summary.testResults,
       stdout: summary.stdout,
       stderr: summary.stderr,
-      runtimeMs: summary.runtimeMs,
+      runtimeMs: summary.executionTimeMs,
+      queueTimeMs,
+      compileTimeMs: summary.compileTimeMs,
+      executionTimeMs: summary.executionTimeMs,
+      totalTimeMs,
+      sandboxWallMs: summary.sandboxWallMs,
       exitCode: summary.exitCode,
     });
 
@@ -273,6 +323,11 @@ export async function getJudgeSubmissionForUser(
     stdout: string | null;
     stderr: string | null;
     runtimeMs: number | null;
+    queueTimeMs: number | null;
+    compileTimeMs: number | null;
+    executionTimeMs: number | null;
+    totalTimeMs: number | null;
+    sandboxWallMs: number | null;
     exitCode: number | null;
     createdAt: string;
     updatedAt: string;
@@ -310,6 +365,11 @@ export async function getJudgeSubmissionForUser(
       stdout: row.stdout,
       stderr: row.stderr,
       runtimeMs: row.runtimeMs,
+      queueTimeMs: row.queueTimeMs,
+      compileTimeMs: row.compileTimeMs,
+      executionTimeMs: row.executionTimeMs,
+      totalTimeMs: row.totalTimeMs,
+      sandboxWallMs: row.sandboxWallMs,
       exitCode: row.exitCode,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),

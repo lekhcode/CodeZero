@@ -6,7 +6,7 @@ import { Topbar } from "@/components/layout/Topbar";
 /** Shell for authenticated routes — sidebar + topbar + animated outlet. */
 export function AppLayout() {
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", height: "100dvh", maxHeight: "100dvh", overflow: "hidden" }}>
       <Sidebar />
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
         <Topbar />

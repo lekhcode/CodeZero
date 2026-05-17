@@ -9,15 +9,18 @@ import { PYTHON_JUDGE_HARNESS } from "../languages/python/harness.js";
 import { JAVA_REFLECT_JUDGE } from "../languages/java/harness.js";
 import { wrapUserSubmissionForJudge } from "../languages/wrapSubmission.js";
 import type { ArgHintRow } from "./argCodegen.js";
+import { SHELL_NOW_MS, ZERO_COMPILE_MS } from "./timingRunScript.js";
 
 export type JudgeCasePayload = { input: string; expected: string; hidden: boolean };
 
 const JUDGE_RUNTIME_ROOT = dirname(fileURLToPath(import.meta.url));
 
 async function writeRunScript(workspacePath: string, body: string): Promise<void> {
-  await writeFile(join(workspacePath, "run.sh"), `#!/bin/sh\nset -e\ncd /workspace\n${body}`, {
-    mode: 0o755,
-  });
+  await writeFile(
+    join(workspacePath, "run.sh"),
+    `#!/bin/sh\nset -e\ncd /workspace\n${SHELL_NOW_MS}\n${body}`,
+    { mode: 0o755 },
+  );
 }
 
 export async function materializeJudgeWorkspace(params: {
@@ -41,29 +44,43 @@ export async function materializeJudgeWorkspace(params: {
     })),
   };
 
-  await writeFile(join(params.workspacePath, "cases.json"), JSON.stringify(bundle), "utf8");
-  await writeFile(join(params.workspacePath, "stdout.txt"), "", "utf8");
-  await writeFile(join(params.workspacePath, "stderr.txt"), "", "utf8");
-  await writeFile(join(params.workspacePath, "exitcode.txt"), "1", "utf8");
-
   const timeout = params.timeoutSec;
+  const casesJson = JSON.stringify(bundle);
+
+  const baseWrites: Promise<void>[] = [
+    writeFile(join(params.workspacePath, "cases.json"), casesJson, "utf8"),
+    writeFile(join(params.workspacePath, "stdout.txt"), "", "utf8"),
+    writeFile(join(params.workspacePath, "stderr.txt"), "", "utf8"),
+    writeFile(join(params.workspacePath, "exitcode.txt"), "1", "utf8"),
+    writeFile(join(params.workspacePath, "compile_ms.txt"), "0", "utf8"),
+  ];
 
   if (params.language === "python") {
-    await writeFile(join(params.workspacePath, "submission.py"), wrappedUser, "utf8");
-    await writeFile(join(params.workspacePath, "harness.py"), PYTHON_JUDGE_HARNESS, "utf8");
+    baseWrites.push(
+      writeFile(join(params.workspacePath, "submission.py"), wrappedUser, "utf8"),
+      writeFile(join(params.workspacePath, "harness.py"), PYTHON_JUDGE_HARNESS, "utf8"),
+    );
+    await Promise.all(baseWrites);
     await writeRunScript(
       params.workspacePath,
-      `timeout ${timeout}s python3 harness.py > stdout.txt 2> stderr.txt\necho $? > exitcode.txt\n`,
+      `${ZERO_COMPILE_MS}\n` +
+        `timeout ${timeout}s python3 harness.py > stdout.txt 2> stderr.txt || true\n` +
+        `echo $? > exitcode.txt\n`,
     );
     return { dockerImage: runtime.dockerImage };
   }
 
   if (params.language === "javascript") {
-    await writeFile(join(params.workspacePath, "submission.js"), wrappedUser, "utf8");
-    await writeFile(join(params.workspacePath, "harness.js"), JS_JUDGE_HARNESS, "utf8");
+    baseWrites.push(
+      writeFile(join(params.workspacePath, "submission.js"), wrappedUser, "utf8"),
+      writeFile(join(params.workspacePath, "harness.js"), JS_JUDGE_HARNESS, "utf8"),
+    );
+    await Promise.all(baseWrites);
     await writeRunScript(
       params.workspacePath,
-      `timeout ${timeout}s node harness.js > stdout.txt 2> stderr.txt\necho $? > exitcode.txt\n`,
+      `${ZERO_COMPILE_MS}\n` +
+        `timeout ${timeout}s node harness.js > stdout.txt 2> stderr.txt || true\n` +
+        `echo $? > exitcode.txt\n`,
     );
     return { dockerImage: runtime.dockerImage };
   }
@@ -73,14 +90,20 @@ export async function materializeJudgeWorkspace(params: {
       throw new Error("C++ judge requires judgeArgHints on the code template");
     }
     const mainCpp = buildCppCodegenJudge(params.functionName, params.cppHints, wrappedUser);
+    baseWrites.push(writeFile(join(params.workspacePath, "main.cpp"), mainCpp, "utf8"));
+    await Promise.all(baseWrites);
     await copyFile(
       join(JUDGE_RUNTIME_ROOT, "runtime", "json.hpp"),
       join(params.workspacePath, "json.hpp"),
     );
-    await writeFile(join(params.workspacePath, "main.cpp"), mainCpp, "utf8");
     await writeRunScript(
       params.workspacePath,
-      `g++ -O2 -std=c++17 -o judge main.cpp 2> stderr.txt || { echo 2 > exitcode.txt; exit 0; }\n` +
+      `COMPILE_START=$(_ms_now)\n` +
+        `g++ -O2 -std=c++17 -o judge main.cpp 2> stderr.txt\n` +
+        `COMPILE_RC=$?\n` +
+        `COMPILE_END=$(_ms_now)\n` +
+        `echo $((COMPILE_END - COMPILE_START)) > compile_ms.txt\n` +
+        `if [ $COMPILE_RC -ne 0 ]; then echo 2 > exitcode.txt; exit 0; fi\n` +
         `timeout ${timeout}s ./judge > stdout.txt 2>> stderr.txt || true\n` +
         `echo $? > exitcode.txt\n`,
     );
@@ -88,15 +111,23 @@ export async function materializeJudgeWorkspace(params: {
   }
 
   if (params.language === "java") {
+    baseWrites.push(
+      writeFile(join(params.workspacePath, "Solution.java"), wrappedUser, "utf8"),
+      writeFile(join(params.workspacePath, "Judge.java"), JAVA_REFLECT_JUDGE, "utf8"),
+    );
+    await Promise.all(baseWrites);
     await copyFile(
       join(JUDGE_RUNTIME_ROOT, "runtime", "json-org.jar"),
       join(params.workspacePath, "json-org.jar"),
     );
-    await writeFile(join(params.workspacePath, "Solution.java"), wrappedUser, "utf8");
-    await writeFile(join(params.workspacePath, "Judge.java"), JAVA_REFLECT_JUDGE, "utf8");
     await writeRunScript(
       params.workspacePath,
-      `javac -encoding UTF-8 -cp json-org.jar *.java 2> stderr.txt || { echo 2 > exitcode.txt; exit 0; }\n` +
+      `COMPILE_START=$(_ms_now)\n` +
+        `javac -encoding UTF-8 -cp json-org.jar *.java 2> stderr.txt\n` +
+        `COMPILE_RC=$?\n` +
+        `COMPILE_END=$(_ms_now)\n` +
+        `echo $((COMPILE_END - COMPILE_START)) > compile_ms.txt\n` +
+        `if [ $COMPILE_RC -ne 0 ]; then echo 2 > exitcode.txt; exit 0; fi\n` +
         `timeout ${timeout}s java -cp .:json-org.jar Judge > stdout.txt 2>> stderr.txt || true\n` +
         `echo $? > exitcode.txt\n`,
     );

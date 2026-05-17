@@ -1,6 +1,7 @@
 /** Fixed harness — loads {@code Solution} from prelude-wrapped submission. */
 export const PYTHON_JUDGE_HARNESS = `
 import json
+import time
 import traceback
 
 from submission import Solution
@@ -18,6 +19,7 @@ sol = Solution()
 method = getattr(sol, fn)
 
 results = []
+max_run_ms = 0
 for idx, tc in enumerate(cases):
     hidden = tc.get("hidden", False)
     try:
@@ -26,7 +28,10 @@ for idx, tc in enumerate(cases):
         expected_raw = tc["expected"]
         expected = json.loads(expected_raw)
 
+        t0 = time.perf_counter()
         actual = method(*args)
+        run_ms = int((time.perf_counter() - t0) * 1000)
+        max_run_ms = max(max_run_ms, run_ms)
         act_n = norm(actual)
         exp_n = norm(expected)
         ok = act_n == exp_n
@@ -34,6 +39,7 @@ for idx, tc in enumerate(cases):
             {
                 "index": idx,
                 "passed": ok,
+                "runTimeMs": run_ms,
                 "actual": json.dumps(actual, separators=(",", ":")),
                 "expected": json.dumps(expected, separators=(",", ":")),
                 "inputPreview": tc["input"][:200],
@@ -50,5 +56,8 @@ for idx, tc in enumerate(cases):
             }
         )
 
-print(json.dumps({"results": results}, separators=(",", ":")), end="")
+print(
+    json.dumps({"results": results, "executionTimeMs": max_run_ms}, separators=(",", ":")),
+    end="",
+)
 `.trimStart();

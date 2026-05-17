@@ -31,7 +31,7 @@ async function onJob(job: Job<JobData>): Promise<void> {
       { jobId: job.id, judgeSubmissionId: id, attempt: job.attemptsMade + 1 },
       "processing judge job",
     );
-    await processJudgeWorkerJob(id);
+    await processJudgeWorkerJob(id, { workerPickedAt: Date.now() });
     return;
   }
 

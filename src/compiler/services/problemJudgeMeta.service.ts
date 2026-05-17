@@ -1,5 +1,7 @@
 import { JudgeMode } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
+import { assertSupportedLanguage } from "../services/submission.service.js";
+import { parseMethodParamNames } from "../utils/methodParamNames.js";
 
 export async function getJudgeMetaBySlug(slug: string, userId?: string | null) {
   const problem = await prisma.problem.findUnique({
@@ -53,14 +55,18 @@ export async function getJudgeMetaBySlug(slug: string, userId?: string | null) {
     constraints: problem.constraints,
     locked,
     lockReason: reason,
-    languages: problem.codeTemplates.map((t) => ({
+    languages: problem.codeTemplates.map((t) => {
+      const lang = assertSupportedLanguage(t.language);
+      return {
       id: t.language,
       starterCode: t.starterCode,
       functionName: t.functionName,
+      paramNames: parseMethodParamNames(t.starterCode, t.functionName, lang, t.judgeArgHints),
       judgeReadyForLanguage:
         hasVisibleTc &&
         !(t.language === "cpp" && (t.judgeArgHints === null || t.judgeArgHints.trim() === "")),
-    })),
+    };
+    }),
     visibleTestcases: problem.judgeTestcases.map((tc) => ({
       orderIndex: tc.orderIndex,
       input: tc.input,

@@ -29,9 +29,24 @@ export const adminTemplateBodySchema = z.object({
   judgeArgHints: z.string().optional().nullable(),
 });
 
-export const adminTestcaseBodySchema = z.object({
+const adminTestcaseItemSchema = z.object({
   input: z.string().min(1),
   expectedOutput: z.string().min(1),
   isHidden: z.boolean(),
   orderIndex: z.number().int().min(0),
 });
+
+/** Single testcase object or a non-empty array of testcases. */
+export const adminTestcaseBodySchema = z.union([
+  adminTestcaseItemSchema.transform((item) => ({
+    mode: "single" as const,
+    items: [item],
+  })),
+  z
+    .array(adminTestcaseItemSchema)
+    .min(1)
+    .transform((items) => ({
+      mode: "batch" as const,
+      items,
+    })),
+]);

@@ -5,12 +5,15 @@ import { upsertDailyPotdSlot } from "./dailyPotd.service.js";
 import { fetchDailyQuestionRaw, fetchQuestionDetailBySlug } from "./leetcode.client.js";
 import {
   hasStoredDetail,
+  hasCompleteStoredExamples,
   mapDailyQuestionToNormalized,
   mapProblemRowToDetailResponse,
   mapQuestionDetailToNormalized,
+  readStoredExamples,
   toProblemDetailResponse,
   toProblemDetailUpsertData,
 } from "./leetcode.mapper.js";
+import { enrichExamplesWithJudgeTestcases, filterQualityExamples } from "./leetcode.parser.js";
 import type { ProblemDetailResponse } from "./leetcode.types.js";
 
 /**
@@ -22,9 +25,10 @@ async function syncProblemBySlug(slug: string): Promise<{
 }> {
   const cached = await prisma.problem.findUnique({ where: { slug } });
 
-  if (cached !== null && hasStoredDetail(cached)) {
+  if (cached !== null && hasStoredDetail(cached) && hasCompleteStoredExamples(cached)) {
     logger.debug({ slug }, "problem detail served from cache");
-    return { row: cached, response: mapProblemRowToDetailResponse(cached) };
+    const response = await attachVisibleTestcaseExamples(cached, mapProblemRowToDetailResponse(cached));
+    return { row: cached, response };
   }
 
   const raw = await fetchQuestionDetailBySlug(slug);
@@ -43,6 +47,7 @@ async function syncProblemBySlug(slug: string): Promise<{
       rawContent: data.rawContent,
       parsedStatement: data.parsedStatement,
       exampleTestcases: data.exampleTestcases,
+      examples: data.examples,
       constraints: data.constraints,
       hints: data.hints,
     },
@@ -50,7 +55,39 @@ async function syncProblemBySlug(slug: string): Promise<{
 
   logger.info({ slug: saved.slug, leetcodeId: saved.leetcodeId }, "problem detail synced");
 
-  return { row: saved, response: toProblemDetailResponse(normalized) };
+  const response = await attachVisibleTestcaseExamples(saved, toProblemDetailResponse(normalized));
+  return { row: saved, response };
+}
+
+async function attachVisibleTestcaseExamples(
+  row: Problem,
+  response: ProblemDetailResponse,
+): Promise<ProblemDetailResponse> {
+  const fromDb = filterQualityExamples(readStoredExamples(row) ?? []);
+  if (fromDb.length > 0) {
+    return { ...response, examples: fromDb };
+  }
+
+  const testcases = await prisma.problemTestcase.findMany({
+    where: { problemId: row.id, isHidden: false },
+    orderBy: { orderIndex: "asc" },
+    select: { input: true, expectedOutput: true },
+  });
+  if (testcases.length === 0) {
+    return { ...response, examples: filterQualityExamples(response.examples) };
+  }
+
+  const base = filterQualityExamples(response.examples);
+  if (base.length > 0) {
+    return {
+      ...response,
+      examples: enrichExamplesWithJudgeTestcases(base, testcases.slice(0, base.length)),
+    };
+  }
+  return {
+    ...response,
+    examples: enrichExamplesWithJudgeTestcases([], testcases),
+  };
 }
 
 /**

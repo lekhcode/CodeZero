@@ -55,6 +55,8 @@ export function CreateScheduleModal({ template, open, onClose }: Props) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.userSchedules });
       void queryClient.invalidateQueries({ queryKey: queryKeys.todayAssignments });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedToday });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedDue });
       reset();
       onClose();
     },

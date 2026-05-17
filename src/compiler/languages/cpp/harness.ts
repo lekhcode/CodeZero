@@ -39,6 +39,7 @@ int main() {
       return 4;
     }
     json rows = json::array();
+    int maxRunMs = 0;
     Solution sol;
     for (size_t ti = 0; ti < root["cases"].size(); ++ti) {
       json tc = root["cases"][(unsigned)ti];
@@ -51,7 +52,12 @@ int main() {
 ${decl}
 
         json gotJson;
+        auto t0 = std::chrono::steady_clock::now();
         auto got = sol.${fn}(${callArgs});
+        auto t1 = std::chrono::steady_clock::now();
+        int runMs = (int) std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
+        maxRunMs = std::max(maxRunMs, runMs);
+        cell["runTimeMs"] = runMs;
         gotJson = json(got);
         json expRaw = json::parse(tc.at("expected").get<std::string>());
         cell["passed"] = (gotJson == expRaw);
@@ -65,6 +71,7 @@ ${decl}
     }
     json out = json::object();
     out["results"] = rows;
+    out["executionTimeMs"] = maxRunMs;
     std::cout << out.dump();
     return 0;
   } catch (const std::exception& e) {

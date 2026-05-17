@@ -1,99 +1,162 @@
 import { createTheme, alpha } from "@mui/material/styles";
 
-/**
- * Bright, premium learning aesthetic — Plus Jakarta Sans for crisp UI typography.
- */
+/** MIUI HyperOS-inspired — warm surfaces, orange primary, soft depth. */
+export const miui = {
+  primary: "#FF6B00",
+  primaryLight: "#FF8F3D",
+  primaryDark: "#E85D00",
+  accent: "#14B8A6",
+  bg: "#F4F4F6",
+  paper: "#FFFFFF",
+  text: "#1C1C1E",
+  textMuted: "#8E8E93",
+  border: alpha("#1C1C1E", 0.08),
+  heatmap: ["#EBEBED", "#FFD4B8", "#FFAD70", "#FF8533", "#FF6B00"],
+} as const;
+
 export const theme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: "#4f46e5",
-      light: "#818cf8",
-      dark: "#3730a3",
+      main: miui.primary,
+      light: miui.primaryLight,
+      dark: miui.primaryDark,
     },
     secondary: {
-      main: "#0ea5e9",
-      light: "#38bdf8",
-      dark: "#0284c7",
+      main: miui.accent,
+      light: "#2DD4BF",
+      dark: "#0D9488",
     },
     background: {
-      default: "#eef2f8",
-      paper: "#ffffff",
+      default: miui.bg,
+      paper: miui.paper,
     },
     text: {
-      primary: "#0f172a",
-      secondary: "#475569",
+      primary: miui.text,
+      secondary: miui.textMuted,
     },
-    success: { main: "#059669" },
-    warning: { main: "#d97706" },
-    error: { main: "#dc2626" },
-    divider: alpha("#0f172a", 0.08),
+    success: { main: "#22C55E" },
+    warning: { main: "#F59E0B" },
+    error: { main: "#EF4444" },
+    divider: miui.border,
   },
-  shape: { borderRadius: 14 },
+  shape: { borderRadius: 16 },
   typography: {
     fontFamily: '"Plus Jakarta Sans", "Inter", system-ui, sans-serif',
     fontSize: 15,
-    h1: { fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.15 },
-    h2: { fontWeight: 800, letterSpacing: "-0.025em", lineHeight: 1.2 },
-    h3: { fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.25 },
-    h4: { fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.3 },
-    h5: { fontWeight: 700, letterSpacing: "-0.01em" },
-    h6: { fontWeight: 700 },
+    h1: { fontWeight: 700, letterSpacing: "-0.03em", lineHeight: 1.15 },
+    h2: { fontWeight: 700, letterSpacing: "-0.025em", lineHeight: 1.2 },
+    h3: { fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.25 },
+    h4: { fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.3 },
+    h5: { fontWeight: 600, letterSpacing: "-0.01em" },
+    h6: { fontWeight: 600 },
     subtitle1: { fontWeight: 600, lineHeight: 1.5 },
-    subtitle2: { fontWeight: 600, lineHeight: 1.5 },
-    body1: { lineHeight: 1.65, fontSize: "0.9375rem" },
-    body2: { lineHeight: 1.6, fontSize: "0.875rem" },
-    caption: { lineHeight: 1.5, letterSpacing: "0.01em" },
-    overline: { fontWeight: 800, letterSpacing: "0.08em", lineHeight: 1.4 },
-    button: { textTransform: "none", fontWeight: 700, fontSize: "0.9375rem" },
+    subtitle2: { fontWeight: 600, lineHeight: 1.45 },
+    body1: { lineHeight: 1.6, fontSize: "0.9375rem" },
+    body2: { lineHeight: 1.55, fontSize: "0.875rem" },
+    caption: { lineHeight: 1.45, letterSpacing: "0.01em" },
+    overline: { fontWeight: 700, letterSpacing: "0.06em", lineHeight: 1.4 },
+    button: { textTransform: "none", fontWeight: 600, fontSize: "0.9375rem" },
   },
   components: {
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: "#eef2f8",
-          backgroundImage: `
-            radial-gradient(ellipse 90% 60% at 0% -10%, rgba(79, 70, 229, 0.14), transparent 50%),
-            radial-gradient(ellipse 70% 50% at 100% 0%, rgba(14, 165, 233, 0.12), transparent 45%),
-            radial-gradient(ellipse 50% 40% at 50% 100%, rgba(99, 102, 241, 0.06), transparent)
-          `,
-          backgroundAttachment: "fixed",
+          backgroundColor: miui.bg,
+          backgroundImage: `linear-gradient(180deg, ${alpha(miui.primary, 0.04)} 0%, transparent 28%), linear-gradient(135deg, ${alpha("#14B8A6", 0.03)} 0%, transparent 40%)`,
         },
       },
     },
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
-        root: { borderRadius: 12, padding: "10px 18px" },
+        root: { borderRadius: 12, padding: "8px 16px" },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: 20,
-          border: `1px solid ${alpha("#0f172a", 0.06)}`,
-          boxShadow: `0 2px 12px ${alpha("#0f172a", 0.04)}`,
+          borderRadius: 16,
+          border: `1px solid ${miui.border}`,
+          boxShadow: `0 2px 8px ${alpha("#000", 0.04)}`,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: "none",
         },
       },
     },
     MuiChip: {
       styleOverrides: {
-        root: { fontWeight: 700, fontSize: "0.75rem" },
-      },
-    },
-    MuiTypography: {
-      styleOverrides: {
-        root: {
-          fontFeatureSettings: '"cv11", "ss01"',
-        },
+        root: { fontWeight: 600, fontSize: "0.75rem" },
       },
     },
   },
 });
 
 export const glassSx = {
-  background: alpha("#ffffff", 0.88),
-  backdropFilter: "blur(16px)",
-  border: `1px solid ${alpha("#ffffff", 0.95)}`,
-  boxShadow: `0 4px 24px ${alpha("#4f46e5", 0.06)}`,
+  background: miui.paper,
+  border: `1px solid ${miui.border}`,
+  boxShadow: `0 2px 12px ${alpha("#000", 0.04)}`,
 } as const;
+
+export const miuiCardSx = {
+  ...glassSx,
+  borderRadius: 3,
+} as const;
+
+/** Horizontal inset so titles/labels clear rounded card corners */
+export const sectionInsetX = { xs: 2, sm: 2.5 } as const;
+export const sectionInsetY = { xs: 1.5, sm: 2 } as const;
+
+export const sectionCardSx = {
+  ...miuiCardSx,
+  boxSizing: "border-box",
+  width: "100%",
+} as const;
+
+export const sectionHeaderSx = {
+  px: sectionInsetX,
+  py: 1.25,
+  borderBottom: `1px solid ${miui.border}`,
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 1.25,
+  flexShrink: 0,
+  minWidth: 0,
+  boxSizing: "border-box",
+} as const;
+
+export const sectionContentSx = {
+  px: sectionInsetX,
+  py: sectionInsetY,
+  boxSizing: "border-box",
+  minWidth: 0,
+  width: "100%",
+} as const;
+
+export const sectionScrollSx = {
+  flex: 1,
+  minHeight: 0,
+  minWidth: 0,
+  overflow: "auto",
+  overflowX: "hidden",
+  WebkitOverflowScrolling: "touch",
+  px: sectionInsetX,
+  py: 1,
+  boxSizing: "border-box",
+} as const;
+
+export const labPanelSx = {
+  ...sectionCardSx,
+  position: "relative" as const,
+} as const;
+
+export const labAccentGradient = `linear-gradient(135deg, ${miui.primary} 0%, ${miui.primaryLight} 55%, ${miui.accent} 100%)`;
+
+export const neonGlow = (color: string) =>
+  `0 4px 20px ${alpha(color, 0.22)}`;

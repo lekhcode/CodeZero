@@ -46,7 +46,7 @@ import type {
 } from "@/types/judge.types";
 import { judgeService } from "@/services/judge.service";
 import { useAuthStore } from "@/store/authStore";
-import { queryKeys } from "@/hooks/queryKeys";
+import { learningProgressKeyPrefixes, queryKeys } from "@/hooks/queryKeys";
 import { useJudgeCodingTimer, formatSolveDuration } from "@/hooks/useJudgeCodingTimer";
 import { formatJudgeEditor } from "@/utils/formatJudgeEditor";
 import dayjs from "dayjs";
@@ -88,6 +88,16 @@ function unwrapJsonDisplay(s: string | undefined | null): string {
   } catch {
     return s;
   }
+}
+
+/** Java default {@code Object.toString()} on arrays — hide when harness not updated yet. */
+function formatJudgeActualDisplay(actual: string, expectedDisp: string, passed: boolean): string {
+  const a = actual.trim();
+  if (/^\[[A-Za-z]@[0-9a-fA-F]+$/.test(a)) {
+    if (passed && expectedDisp.trim() !== "") return expectedDisp;
+    return expectedDisp.trim() !== "" ? expectedDisp : a;
+  }
+  return unwrapJsonDisplay(a);
 }
 
 function formatValueForReadableField(v: unknown): string {
@@ -177,7 +187,13 @@ function ReadonlyIoField({
   );
 }
 
-function JudgeInputAsFields({ raw }: { raw: string }) {
+function JudgeInputAsFields({
+  raw,
+  paramNames,
+}: {
+  raw: string;
+  paramNames?: string[];
+}) {
   const p = parseJudgeInput(raw);
   const rootSx = {
     "& .MuiOutlinedInput-root": {
@@ -196,7 +212,7 @@ function JudgeInputAsFields({ raw }: { raw: string }) {
         {p.args.map((a, i) => (
           <TextField
             key={String(i)}
-            label={`Param ${i + 1}`}
+            label={paramNames?.[i] ?? `arg${i}`}
             size="small"
             variant="outlined"
             value={formatValueForReadableField(a)}
@@ -286,6 +302,11 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
   const [code, setCode] = useState(() => readyLanguages[0]?.starterCode ?? "");
   const [leftTab, setLeftTab] = useState<LeftTab>("description");
 
+  const activeParamNames = useMemo(() => {
+    const row = readyLanguages.find((l) => l.id === language);
+    return row?.paramNames ?? [];
+  }, [readyLanguages, language]);
+
   useEffect(() => {
     if (readyLanguages.length === 0) {
       setLanguage(null);
@@ -314,6 +335,7 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
     (readyLanguages.length === 0 ? "No judge-ready language is configured for this problem." : null);
 
   const [busy, setBusy] = useState(false);
+  const [activeSampleIdx, setActiveSampleIdx] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [submission, setSubmission] = useState<JudgeSubmission | null>(null);
   const [solutionOpen, setSolutionOpen] = useState(false);
@@ -383,6 +405,9 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
     void (async () => {
       await queryClient.invalidateQueries({ queryKey: queryKeys.judgeMeta(slug) });
       await queryClient.refetchQueries({ queryKey: queryKeys.judgeMeta(slug) });
+      for (const key of learningProgressKeyPrefixes) {
+        await queryClient.invalidateQueries({ queryKey: key });
+      }
     })();
     setLeftTab("submissions");
   }, [submission, queryClient, slug]);
@@ -526,10 +551,10 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
           r?.error !== undefined && r.error !== ""
             ? ""
             : r?.actual !== undefined
-              ? unwrapJsonDisplay(String(r.actual))
+              ? formatJudgeActualDisplay(String(r.actual), expectedDisp, harnessOk)
               : busy
                 ? ""
-                : "";
+                : expectedDisp;
 
         const missingExpected =
           (tc.expectedOutput === undefined || tc.expectedOutput.trim() === "") &&
@@ -556,6 +581,53 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
   const sampleStripHealthy = showSampleDetailedResults && sampleFailures.length > 0 && sampleFailures.every((row) => row.ok);
 
   const sampleStripAnyFail = showSampleDetailedResults && sampleFailures.some((row) => !row.ok);
+
+  type SampleCaseRow = {
+    key: number;
+    label: string;
+    input: string;
+    expectedDisp: string;
+    outputDisp: string;
+    ok: boolean | null;
+    note?: string;
+  };
+
+  const sampleCaseRows = useMemo((): SampleCaseRow[] => {
+    if (showSampleDetailedResults) {
+      return sampleFailures.map((row) => ({
+        key: row.idx,
+        label: `Case ${row.idx}`,
+        input: row.input,
+        expectedDisp: row.expectedDisp,
+        outputDisp: row.outputDisp,
+        ok: row.ok,
+        note: row.note,
+      }));
+    }
+    return visibleCasesSorted.map((tc, i) => ({
+      key: tc.orderIndex,
+      label: `Case ${i + 1}`,
+      input: tc.input,
+      expectedDisp: unwrapJsonDisplay(tc.expectedOutput ?? ""),
+      outputDisp: "",
+      ok: null,
+      note: undefined,
+    }));
+  }, [showSampleDetailedResults, sampleFailures, visibleCasesSorted]);
+
+  const activeSample = sampleCaseRows[activeSampleIdx] ?? sampleCaseRows[0];
+
+  useEffect(() => {
+    if (sampleCaseRows.length === 0) return;
+    setActiveSampleIdx((i) => Math.min(i, sampleCaseRows.length - 1));
+  }, [sampleCaseRows.length]);
+
+  useEffect(() => {
+    if (submission === null || !isTerminal(submission.status)) return;
+    if (!showSampleDetailedResults) return;
+    const failIdx = sampleFailures.findIndex((row) => !row.ok);
+    if (failIdx >= 0) setActiveSampleIdx(failIdx);
+  }, [submission?.id, submission?.status, showSampleDetailedResults, sampleFailures]);
 
   const descriptionBody = (
     <>
@@ -584,8 +656,10 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
                 <Typography variant="caption" sx={{ fontWeight: 700, color: "text.secondary" }}>
                   Example {i + 1}
                 </Typography>
-                <Typography sx={{ mt: 0.75 }}>Input: {ex.input}</Typography>
-                <Typography>Output: {ex.output}</Typography>
+                <Typography sx={{ mt: 0.75, whiteSpace: "pre-wrap" }}>Input: {ex.input}</Typography>
+                {ex.output.trim() !== "" ? (
+                  <Typography sx={{ whiteSpace: "pre-wrap" }}>Output: {ex.output}</Typography>
+                ) : null}
                 {ex.explanation !== undefined && ex.explanation !== "" && (
                   <Typography color="text.secondary" sx={{ mt: 0.75, fontFamily: "inherit" }}>
                     {ex.explanation}
@@ -746,150 +820,141 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
 
   const waitingForJudge = submission !== null && !isTerminal(submission.status);
 
+  const sampleStatusAccent =
+    hideRowTableForPureSubmitAc || sampleStripHealthy
+      ? "#3fb950"
+      : sampleStripAnyFail
+        ? "#f85149"
+        : alpha("#fff", 0.12);
+
   const sampleCasesSection =
-    visibleCasesSorted.length > 0 ? (
+    sampleCaseRows.length > 0 ? (
       <Box
         sx={{
-          mb: 1.5,
-          p: 1.5,
-          borderRadius: 2,
-          border: `2px solid ${
-            hideRowTableForPureSubmitAc || sampleStripHealthy
-              ? alpha("#3fb950", 0.75)
-              : sampleStripAnyFail
-                ? alpha("#f85149", 0.45)
-                : alpha("#30363d", 0.9)
-          }`,
-          bgcolor:
-            hideRowTableForPureSubmitAc || sampleStripHealthy
-              ? alpha("#238636", 0.08)
-              : sampleStripAnyFail
-                ? alpha("#da3633", 0.06)
-                : alpha("#161b22", 0.5),
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+          mb: 1.25,
+          borderRadius: 1.5,
+          border: `1px solid ${sampleStatusAccent}`,
+          bgcolor: alpha("#0d1117", 0.6),
+          overflow: "hidden",
         }}
       >
-        {(waitingForJudge || (busy && submission !== null)) && !hideRowTableForPureSubmitAc && (
-          <Typography variant="caption" sx={{ color: alpha("#d29922", 0.95), fontWeight: 700, display: "block", mb: 1 }}>
-            Judging sample cases…
+        <Stack
+          direction="row"
+          sx={{
+            px: 1.25,
+            py: 0.75,
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderBottom: `1px solid ${alpha("#fff", 0.06)}`,
+            bgcolor: alpha("#161b22", 0.5),
+          }}
+        >
+          <Typography sx={{ fontWeight: 800, fontSize: 12, color: alpha("#fff", 0.82), letterSpacing: "0.04em" }}>
+            SAMPLE CASES
           </Typography>
-        )}
-        <Stack direction="row" sx={{ justifyContent: "space-between", alignItems: "center", mb: 1.25 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: 13, color: alpha("#fff", 0.9), letterSpacing: "0.02em" }}>
-            Sample cases
-          </Typography>
-          <Chip
-            label={visibleCasesSorted.length}
-            size="small"
-            sx={{
-              bgcolor: alpha("#21262d", 1),
-              color: alpha("#fff", 0.55),
-              fontWeight: 800,
-              height: 24,
-              minWidth: 36,
-              border: `1px solid ${alpha("#fff", 0.08)}`,
-            }}
-          />
-        </Stack>
-        {hideRowTableForPureSubmitAc ? (
-          <Box sx={{ py: 0.75, px: 0.5 }}>
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center", mb: 0.5 }}>
-              <CheckCircleRoundedIcon sx={{ color: "#aff5b4", fontSize: 22 }} />
-              <Typography sx={{ fontWeight: 800, color: alpha("#fff", 0.92), fontSize: 13 }}>
-                All sample checks passed
+          {(waitingForJudge || (busy && submission !== null)) && !hideRowTableForPureSubmitAc ? (
+            <Typography variant="caption" sx={{ color: alpha("#d29922", 0.95), fontWeight: 700 }}>
+              Judging…
+            </Typography>
+          ) : hideRowTableForPureSubmitAc ? (
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+              <CheckCircleRoundedIcon sx={{ color: "#aff5b4", fontSize: 16 }} />
+              <Typography variant="caption" sx={{ color: "#aff5b4", fontWeight: 700 }}>
+                All passed
               </Typography>
             </Stack>
-            <Typography variant="caption" sx={{ color: alpha("#fff", 0.45), display: "block", pl: 3.75 }}>
-              Full Submit cleared hidden suites too — per-case breakdown hidden for Accepted.
+          ) : showSampleDetailedResults ? (
+            <Typography variant="caption" sx={{ color: alpha("#fff", 0.45), fontWeight: 600 }}>
+              {sampleFailures.filter((r) => r.ok).length}/{sampleFailures.length} passed
             </Typography>
-          </Box>
+          ) : null}
+        </Stack>
+
+        {hideRowTableForPureSubmitAc ? (
+          <Typography variant="caption" sx={{ px: 1.25, py: 1, color: alpha("#fff", 0.42), display: "block" }}>
+            Full submit accepted — hidden suites cleared. Per-case I/O hidden for Accepted.
+          </Typography>
         ) : (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" },
-              gap: 1.5,
-              alignItems: "stretch",
-            }}
-          >
-            {!showSampleDetailedResults
-              ? visibleCasesSorted.map((tc, i) => (
-                  <Paper
-                    key={tc.orderIndex}
-                    elevation={0}
+          <>
+            <Tabs
+              value={activeSampleIdx}
+              onChange={(_, v) => setActiveSampleIdx(v)}
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                minHeight: 34,
+                px: 0.5,
+                borderBottom: `1px solid ${alpha("#fff", 0.06)}`,
+                "& .MuiTabs-indicator": {
+                  height: 2,
+                  bgcolor:
+                    activeSample?.ok === false ? "#f85149" : activeSample?.ok === true ? "#3fb950" : "#58a6ff",
+                },
+                "& .MuiTab-root": {
+                  minHeight: 34,
+                  py: 0.25,
+                  px: 1.25,
+                  minWidth: 72,
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: 12,
+                  color: alpha("#fff", 0.45),
+                  "&.Mui-selected": { color: alpha("#fff", 0.92) },
+                },
+              }}
+            >
+              {sampleCaseRows.map((row, i) => (
+                <Tab
+                  key={row.key}
+                  value={i}
+                  label={
+                    <Stack direction="row" spacing={0.5} sx={{ alignItems: "center" }}>
+                      <span>{row.label}</span>
+                      {row.ok === true ? (
+                        <CheckCircleRoundedIcon sx={{ fontSize: 14, color: "#3fb950" }} />
+                      ) : row.ok === false ? (
+                        <CloseRoundedIcon sx={{ fontSize: 14, color: "#f85149" }} />
+                      ) : null}
+                    </Stack>
+                  }
+                />
+              ))}
+            </Tabs>
+
+            {activeSample !== undefined ? (
+              <Box sx={{ px: 1.25, py: 1.25 }}>
+                <JudgeInputAsFields raw={activeSample.input} paramNames={activeParamNames} />
+
+                {showSampleDetailedResults ? (
+                  <Box
                     sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      border: `1px solid ${alpha("#30363d", 0.95)}`,
-                      bgcolor: alpha("#0d1117", 0.95),
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 0.75,
+                      mt: 1.25,
+                      display: "grid",
+                      gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                      gap: 1.25,
+                      alignItems: "start",
                     }}
                   >
-                    <Typography sx={{ fontWeight: 800, fontSize: 12, color: alpha("#58a6ff", 0.95) }}>
-                      Case {i + 1}
-                    </Typography>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: alpha("#fff", 0.38), textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                      Input
-                    </Typography>
-                    <JudgeInputAsFields raw={tc.input} />
-                  </Paper>
-                ))
-              : sampleFailures.map((row) => (
-                  <Paper
-                    key={row.idx}
-                    elevation={0}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      border: `1px solid ${row.ok ? alpha("#238636", 0.35) : alpha("#f85149", 0.45)}`,
-                      bgcolor: row.ok ? alpha("#0d1117", 0.92) : alpha("#1c0f12", 0.45),
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 1,
-                      boxShadow: row.ok ? undefined : `0 0 0 1px ${alpha("#da3633", 0.12)} inset`,
-                    }}
+                    <ReadonlyIoField label="Expected" value={activeSample.expectedDisp} pendingHint="—" />
+                    <ReadonlyIoField
+                      label="Your output"
+                      value={activeSample.outputDisp}
+                      pendingHint={busy ? "Running…" : "—"}
+                    />
+                  </Box>
+                ) : null}
+
+                {activeSample.note !== undefined ? (
+                  <Typography
+                    variant="caption"
+                    sx={{ mt: 1, color: alpha("#ffa657", 0.95), whiteSpace: "pre-wrap", display: "block" }}
                   >
-                    <Stack direction="row" spacing={1} sx={{ justifyContent: "space-between", alignItems: "center" }}>
-                      <Typography sx={{ fontWeight: 800, fontSize: 12, color: alpha("#79c0ff", 0.95) }}>
-                        Case {row.idx}
-                      </Typography>
-                      {row.ok ? (
-                        <Chip
-                          size="small"
-                          label="Passed"
-                          sx={{ bgcolor: alpha("#238636", 0.35), color: "#aff5b4", height: 22, fontWeight: 800 }}
-                        />
-                      ) : (
-                        <Chip
-                          size="small"
-                          icon={<CloseRoundedIcon sx={{ fontSize: 16 }} />}
-                          label="Failed"
-                          sx={{ bgcolor: alpha("#da3633", 0.32), color: "#ffc1bc", height: 22, fontWeight: 800 }}
-                        />
-                      )}
-                    </Stack>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: alpha("#fff", 0.38), textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                      Input
-                    </Typography>
-                    <JudgeInputAsFields raw={row.input} />
-                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25}>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <ReadonlyIoField label="Expected" value={row.expectedDisp} pendingHint="Pending" />
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <ReadonlyIoField label="Output" value={row.outputDisp} pendingHint="Pending" />
-                      </Box>
-                    </Stack>
-                    {row.note !== undefined && (
-                      <Typography variant="caption" sx={{ color: alpha("#ffa657", 0.95), whiteSpace: "pre-wrap" }}>
-                        {row.note}
-                      </Typography>
-                    )}
-                  </Paper>
-                ))}
-          </Box>
+                    {activeSample.note}
+                  </Typography>
+                ) : null}
+              </Box>
+            ) : null}
+          </>
         )}
       </Box>
     ) : null;
@@ -953,9 +1018,16 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
             ) : submission.mode === "RUN_SAMPLE" ? (
               <Chip size="small" label="Sample tests only" variant="outlined" sx={{ color: alpha("#fff", 0.65), borderColor: alpha("#fff", 0.2) }} />
             ) : null}
-            {submission.runtimeMs !== null ? (
+            {submission.executionTimeMs != null || submission.runtimeMs !== null ? (
               <Typography color={alpha("#fff", 0.45)} variant="caption" sx={{ fontWeight: 600 }}>
-                {submission.runtimeMs} ms
+                Run {(submission.executionTimeMs ?? submission.runtimeMs) ?? 0} ms
+                {submission.compileTimeMs != null && submission.compileTimeMs > 0
+                  ? ` · Compile ${submission.compileTimeMs} ms`
+                  : ""}
+                {submission.queueTimeMs != null && submission.queueTimeMs > 0
+                  ? ` · Queue ${submission.queueTimeMs} ms`
+                  : ""}
+                {submission.totalTimeMs != null ? ` · Total ${submission.totalTimeMs} ms` : ""}
               </Typography>
             ) : null}
           </Stack>

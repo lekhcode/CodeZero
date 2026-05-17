@@ -7,8 +7,10 @@ import { buildSecureDockerRunArgs } from "../docker/dockerArgs.js";
 import { createExecutionWorkspace } from "../sandbox/workspace.js";
 import { compilerLogger } from "../utils/logger.js";
 import { truncateOutput } from "../utils/truncate.js";
+import { relaxJudgeTestResults } from "./judgeOutputCompare.js";
 import { materializeJudgeWorkspace, type JudgeCasePayload } from "./writeJudgeWorkspace.js";
 import type { ArgHintRow } from "./argCodegen.js";
+import { readPhaseTimings } from "./readPhaseTimings.js";
 import { SubmissionStatus } from "@prisma/client";
 
 const DOCKER_BIN = process.env["DOCKER_BIN"] ?? "docker";
@@ -63,6 +65,7 @@ export type ParsedJudgeCase = {
   index: number;
   passed: boolean;
   hidden?: boolean;
+  runTimeMs?: number;
   actual?: string;
   expected?: string;
   inputPreview?: string;
@@ -74,7 +77,12 @@ export type JudgeExecutionSummary = {
   testResults: ParsedJudgeCase[];
   stdout: string;
   stderr: string;
+  /** Max per-testcase harness time (user code only). */
   runtimeMs: number;
+  executionTimeMs: number;
+  compileTimeMs: number;
+  sandboxWallMs: number;
+  workspaceMs: number;
   exitCode: number;
 };
 
@@ -120,10 +128,10 @@ export async function executeJudgeInDocker(params: {
   cppHints: ArgHintRow | null;
 }): Promise<JudgeExecutionSummary> {
   const workspace = await createExecutionWorkspace(params.jobId);
-  const started = Date.now();
   const dockerTimeoutMs = env.COMPILER_JOB_TIMEOUT_MS + 5_000;
 
   try {
+    const workspaceStart = Date.now();
     const { dockerImage } = await materializeJudgeWorkspace({
       workspacePath: workspace.hostPath,
       language: params.language,
@@ -133,9 +141,10 @@ export async function executeJudgeInDocker(params: {
       cppHints: params.cppHints,
       timeoutSec: env.COMPILER_EXECUTION_TIMEOUT_SEC,
     });
+    const workspaceMs = Date.now() - workspaceStart;
 
     compilerLogger.info(
-      { jobId: params.jobId, language: params.language, image: dockerImage },
+      { jobId: params.jobId, language: params.language, image: dockerImage, workspaceMs },
       "judge sandbox start",
     );
 
@@ -146,10 +155,13 @@ export async function executeJudgeInDocker(params: {
       "/workspace/run.sh",
     ];
 
+    const dockerStart = Date.now();
     const { timedOut: dockerTimedOut, dockerStderr, exitCode: dockerExit } = await runDockerCommand(
       dockerArgs,
       dockerTimeoutMs,
     );
+    const sandboxWallMs = Date.now() - dockerStart;
+
     const outputs = await readWorkspaceOutputs(workspace.hostPath);
     if (dockerExit !== 0 && dockerStderr.trim() !== "" && outputs.stderr.trim() === "") {
       outputs.stderr = dockerStderr;
@@ -160,13 +172,20 @@ export async function executeJudgeInDocker(params: {
 
     let results: ParsedJudgeCase[] = [];
     try {
-      const parsed = JSON.parse(outputs.stdout.trim()) as { results?: ParsedJudgeCase[] };
+      const parsed = JSON.parse(outputs.stdout.trim()) as {
+        results?: ParsedJudgeCase[];
+      };
       if (Array.isArray(parsed.results)) {
         results = parsed.results;
       }
     } catch {
       results = [];
     }
+
+    results = relaxJudgeTestResults(results, params.cases);
+
+    const phases = await readPhaseTimings(workspace.hostPath, outputs.stdout);
+    const executionTimeMs = phases.executionTimeMs;
 
     const exitForStatus = programTimedOut ? 124 : outputs.exitCode;
     const status = aggregateVerdict(
@@ -177,14 +196,30 @@ export async function executeJudgeInDocker(params: {
       params.language,
     );
 
-    const runtimeMs = Date.now() - started;
+    compilerLogger.info(
+      {
+        jobId: params.jobId,
+        language: params.language,
+        status,
+        workspaceMs,
+        sandboxWallMs,
+        compileTimeMs: phases.compileTimeMs,
+        executionTimeMs,
+        caseCount: params.cases.length,
+      },
+      "judge sandbox phases",
+    );
 
     return {
       status,
       testResults: results,
       stdout: truncateOutput(outputs.stdout),
       stderr: truncateOutput(outputs.stderr),
-      runtimeMs,
+      runtimeMs: executionTimeMs,
+      executionTimeMs,
+      compileTimeMs: phases.compileTimeMs,
+      sandboxWallMs,
+      workspaceMs,
       exitCode: exitForStatus,
     };
   } finally {

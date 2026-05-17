@@ -14,6 +14,7 @@ const { Solution } = require("./submission.js");
 const sol = new Solution();
 
 const results = [];
+let maxRunMs = 0;
 
 for (let idx = 0; idx < cases.length; idx++) {
   const tc = cases[idx];
@@ -23,11 +24,15 @@ for (let idx = 0; idx < cases.length; idx++) {
     const args = argsObj.args;
     const expected = JSON.parse(tc.expected);
 
+    const t0 = performance.now();
     const actual = sol[fn](...args);
+    const runMs = Math.round(performance.now() - t0);
+    maxRunMs = Math.max(maxRunMs, runMs);
     const ok = JSON.stringify(norm(actual)) === JSON.stringify(norm(expected));
     results.push({
       index: idx,
       passed: ok,
+      runTimeMs: runMs,
       actual: JSON.stringify(actual),
       expected: JSON.stringify(expected),
       inputPreview: tc.input.slice(0, 200),
@@ -44,5 +49,5 @@ for (let idx = 0; idx < cases.length; idx++) {
   }
 }
 
-process.stdout.write(JSON.stringify({ results }, null, 0));
+process.stdout.write(JSON.stringify({ results, executionTimeMs: maxRunMs }, null, 0));
 `.trimStart();

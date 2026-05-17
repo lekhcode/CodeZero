@@ -107,6 +107,123 @@ public final class Judge {
     return a.similar(b);
   }
 
+  static int[] toIntPair(Object exp) {
+    JSONArray a = toJa(exp);
+    if (a.length() != 2) return null;
+    return new int[] { a.getInt(0), a.getInt(1) };
+  }
+
+  static boolean samePairSorted(int[] a, int[] b) {
+    if (a.length != 2 || b.length != 2) return false;
+    int a0 = Math.min(a[0], a[1]);
+    int a1 = Math.max(a[0], a[1]);
+    int b0 = Math.min(b[0], b[1]);
+    int b1 = Math.max(b[0], b[1]);
+    return a0 == b0 && a1 == b1;
+  }
+
+  static int[] numsFromArgs(JSONArray args) {
+    if (args == null || args.length() < 2) return null;
+    JSONArray nums = args.optJSONArray(0);
+    if (nums == null) return null;
+    int[] out = new int[nums.length()];
+    for (int i = 0; i < nums.length(); i++) out[i] = nums.getInt(i);
+    return out;
+  }
+
+  static boolean isValidTwoSumPair(int[] nums, int target, int[] pair) {
+    if (pair == null || pair.length != 2) return false;
+    int i = pair[0];
+    int j = pair[1];
+    if (i == j) return false;
+    if (i < 0 || j < 0 || i >= nums.length || j >= nums.length) return false;
+    return nums[i] + nums[j] == target;
+  }
+
+  /** Accept alternate valid index pairs when strict JSON compare fails. */
+  static boolean relaxedMatch(JSONArray argList, Object exp, Object got) {
+    if (!(got instanceof int[])) return false;
+    int[] act = (int[]) got;
+    int[] expPair = toIntPair(exp);
+    if (expPair == null) return false;
+    if (samePairSorted(act, expPair)) return true;
+    int[] nums = numsFromArgs(argList);
+    if (nums == null) return false;
+    int target = argList.getInt(1);
+    return isValidTwoSumPair(nums, target, act) && isValidTwoSumPair(nums, target, expPair);
+  }
+
+  static String jsonDisplay(Object v) {
+    if (v == null) return "null";
+    if (v instanceof int[]) return jsonInt1d((int[]) v);
+    if (v instanceof long[]) return jsonLong1d((long[]) v);
+    if (v instanceof double[]) return jsonDouble1d((double[]) v);
+    if (v instanceof boolean[]) return jsonBool1d((boolean[]) v);
+    if (v instanceof int[][]) return jsonInt2d((int[][]) v);
+    if (v instanceof long[][]) return jsonLong2d((long[][]) v);
+    Class<?> c = v.getClass();
+    if (v instanceof Number || v instanceof Boolean || v instanceof Character) {
+      return String.valueOf(v);
+    }
+    if (v instanceof String) return JSONObject.quote((String) v);
+    if (c.isArray()) return new JSONArray(v).toString();
+    return toJa(v).toString();
+  }
+
+  static String jsonInt1d(int[] a) {
+    StringBuilder sb = new StringBuilder("[");
+    for (int i = 0; i < a.length; i++) {
+      if (i > 0) sb.append(',');
+      sb.append(a[i]);
+    }
+    return sb.append(']').toString();
+  }
+
+  static String jsonLong1d(long[] a) {
+    StringBuilder sb = new StringBuilder("[");
+    for (int i = 0; i < a.length; i++) {
+      if (i > 0) sb.append(',');
+      sb.append(a[i]);
+    }
+    return sb.append(']').toString();
+  }
+
+  static String jsonDouble1d(double[] a) {
+    StringBuilder sb = new StringBuilder("[");
+    for (int i = 0; i < a.length; i++) {
+      if (i > 0) sb.append(',');
+      sb.append(a[i]);
+    }
+    return sb.append(']').toString();
+  }
+
+  static String jsonBool1d(boolean[] a) {
+    StringBuilder sb = new StringBuilder("[");
+    for (int i = 0; i < a.length; i++) {
+      if (i > 0) sb.append(',');
+      sb.append(a[i]);
+    }
+    return sb.append(']').toString();
+  }
+
+  static String jsonInt2d(int[][] mx) {
+    StringBuilder sb = new StringBuilder("[");
+    for (int r = 0; r < mx.length; r++) {
+      if (r > 0) sb.append(',');
+      sb.append(jsonInt1d(mx[r]));
+    }
+    return sb.append(']').toString();
+  }
+
+  static String jsonLong2d(long[][] mx) {
+    StringBuilder sb = new StringBuilder("[");
+    for (int r = 0; r < mx.length; r++) {
+      if (r > 0) sb.append(',');
+      sb.append(jsonLong1d(mx[r]));
+    }
+    return sb.append(']').toString();
+  }
+
   static String stack(Throwable t) {
     java.io.StringWriter sw = new java.io.StringWriter();
     t.printStackTrace(new java.io.PrintWriter(sw));
@@ -119,6 +236,7 @@ public final class Judge {
     String fn = root.getString("functionName");
     JSONArray cases = root.getJSONArray("cases");
     JSONArray rows = new JSONArray();
+    int maxRunMs = 0;
     Solution sol = new Solution();
     Method m = resolve(Solution.class, fn);
     for (int i = 0; i < cases.length(); i++) {
@@ -129,10 +247,15 @@ public final class Judge {
       try {
         JSONObject inp = new JSONObject(tc.getString("input"));
         JSONArray args = inp.getJSONArray("args");
+        long t0 = System.nanoTime();
         Object got = m.invoke(sol, buildArgs(m, args));
+        int runMs = (int) ((System.nanoTime() - t0) / 1_000_000L);
+        maxRunMs = Math.max(maxRunMs, runMs);
+        cell.put("runTimeMs", runMs);
         Object exp = new JSONTokener(tc.getString("expected")).nextValue();
-        cell.put("passed", cmp(exp, got));
-        cell.put("actual", String.valueOf(got));
+        boolean ok = cmp(exp, got) || relaxedMatch(args, exp, got);
+        cell.put("passed", ok);
+        cell.put("actual", jsonDisplay(got));
         cell.put("expected", tc.getString("expected"));
         cell.put(
             "inputPreview",
@@ -145,6 +268,7 @@ public final class Judge {
     }
     JSONObject out = new JSONObject();
     out.put("results", rows);
+    out.put("executionTimeMs", maxRunMs);
     System.out.print(out.toString());
   }
 }

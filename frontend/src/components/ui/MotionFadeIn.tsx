@@ -11,9 +11,10 @@ export function MotionFadeIn({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      style={{ height: "100%", minHeight: 0, display: "flex", flexDirection: "column", flex: 1 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.3, delay, ease: [0.22, 1, 0.36, 1] }}
     >
       {children}
     </motion.div>

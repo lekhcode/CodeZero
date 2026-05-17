@@ -13,6 +13,8 @@ declare global {
   namespace Express {
     interface Request {
       user?: AuthedUser;
+      /** Set by `validateQuery` — Express 5 `req.query` is read-only (string values only). */
+      validatedQuery?: unknown;
     }
   }
 }

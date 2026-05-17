@@ -39,24 +39,32 @@ export async function addTestcase(req: Request, res: Response): Promise<void> {
   const { problemId } = req.params as { problemId: string };
   if (problemId === undefined) throw ApiError.badRequest("Missing problem id");
   const body = req.body as {
-    input: string;
-    expectedOutput: string;
-    isHidden: boolean;
-    orderIndex: number;
+    mode: "single" | "batch";
+    items: Array<{
+      input: string;
+      expectedOutput: string;
+      isHidden: boolean;
+      orderIndex: number;
+    }>;
   };
 
   const p = await prisma.problem.findUnique({ where: { id: problemId } });
   if (p === null) throw ApiError.notFound("Problem not found");
 
-  const row = await prisma.problemTestcase.create({
-    data: {
+  const rows = await prisma.problemTestcase.createManyAndReturn({
+    data: body.items.map((item) => ({
       problemId,
-      input: body.input,
-      expectedOutput: body.expectedOutput,
-      isHidden: body.isHidden,
-      orderIndex: body.orderIndex,
-    },
+      input: item.input,
+      expectedOutput: item.expectedOutput,
+      isHidden: item.isHidden,
+      orderIndex: item.orderIndex,
+    })),
   });
 
-  ApiResponse.created(res, { testcase: row });
+  if (body.mode === "single") {
+    ApiResponse.created(res, { testcase: rows[0] });
+    return;
+  }
+
+  ApiResponse.created(res, { testcases: rows });
 }

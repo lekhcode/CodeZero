@@ -10,3 +10,4 @@ import * as usersController from "./users.controller.js";
 export const usersRouter = Router();
 
 usersRouter.get("/me", requireAuth, asyncHandler(usersController.me));
+usersRouter.get("/me/learning-insights", requireAuth, asyncHandler(usersController.learningInsights));

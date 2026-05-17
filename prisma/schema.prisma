@@ -49,6 +49,14 @@ model ScheduleTemplate {
   @@map("schedule_templates")
 }
 
+/** Per-problem learning state for a schedule on a calendar day (source of truth for progress). */
+enum AssignmentStatus {
+  PENDING
+  SOLVED
+  MISSED
+  SKIPPED
+}
+
 model UserSchedule {
   id               String            @id @default(uuid()) @db.Uuid
   userId           String            @db.Uuid
@@ -58,8 +66,9 @@ model UserSchedule {
   difficulty       DifficultyLevel?
   createdAt        DateTime          @default(now())
 
-  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  template ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template     ScheduleTemplate @relation(fields: [templateId], references: [id], onDelete: Restrict)
+  assignments  Assignment[]
 
   /** One enrollment per user per template (e.g. cannot add "Binary Search" twice). */
   @@unique([userId, templateId])
@@ -82,6 +91,7 @@ model User {
   compilerSubmissions  CompilerSubmission[]
   judgeSubmissions     JudgeSubmission[]
   solvedProblems       UserProblemSolve[]
+  assignments          Assignment[]
 
   @@map("users")
 }
@@ -146,19 +156,60 @@ model JudgeSubmission {
   testResults  Json?
   stderr       String?          @db.Text
   stdout       String?          @db.Text
+  /** User solution CPU/wall inside harness (max testcase ms). Same semantic as executionTimeMs. */
   runtimeMs        Int?
+  queueTimeMs      Int?
+  compileTimeMs    Int?
+  executionTimeMs  Int?
+  /** Worker wall: pickup → finalize (includes queue wait if measured end-to-end). */
+  totalTimeMs      Int?
+  /** Docker run wall (compile + all tests + container overhead). */
+  sandboxWallMs    Int?
   exitCode         Int?
   codingDurationMs Int?
   createdAt        DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem           Problem      @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  solvedAssignments Assignment[] @relation("AssignmentSolvedSubmission")
 
   @@index([userId])
   @@index([problemId])
   @@index([status])
+  @@index([userId, createdAt])
   @@map("judge_submissions")
+}
+
+/**
+ * Delivered practice item — one row per (user, schedule, problem, calendar day).
+ * Synced when today's problems are resolved; updated to SOLVED on accepted full submit.
+ */
+model Assignment {
+  id                 String           @id @default(uuid()) @db.Uuid
+  userId             String           @db.Uuid
+  problemId          String           @db.Uuid
+  userScheduleId     String           @db.Uuid
+  assignedDate       DateTime         @db.Date
+  status             AssignmentStatus @default(PENDING)
+  solvedAt           DateTime?
+  solvedSubmissionId String?          @db.Uuid
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem          Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  userSchedule     UserSchedule     @relation(fields: [userScheduleId], references: [id], onDelete: Cascade)
+  solvedSubmission JudgeSubmission? @relation("AssignmentSolvedSubmission", fields: [solvedSubmissionId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, problemId, userScheduleId, assignedDate])
+  @@index([userId])
+  @@index([userId, assignedDate])
+  @@index([userId, status])
+  @@index([assignedDate])
+  @@index([status])
+  @@index([createdAt])
+  @@map("assignments")
 }
 
 model UserProblemSolve {
@@ -197,6 +248,8 @@ model Problem {
   parsedStatement  String? @db.Text
   /** Raw `exampleTestcases` string from LeetCode (newline-separated). */
   exampleTestcases String? @db.Text
+  /** Structured examples for API/UI — persisted from LeetCode `exampleTestcaseList` + parser. */
+  examples         Json?
   constraints      String[]
   hints            String[]
 
@@ -210,6 +263,7 @@ model Problem {
   judgeTestcases     ProblemTestcase[]
   judgeSubmissions   JudgeSubmission[]
   userSolves         UserProblemSolve[]
+  assignments        Assignment[]
 
   @@map("problems")
 }

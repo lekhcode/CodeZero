@@ -21,6 +21,11 @@
     "db:seed": "tsx prisma/seed.ts",
     "sync:blind-75": "tsx scripts/sync-study-plan.ts blind-75",
     "sync:top-interview-150": "tsx scripts/sync-study-plan.ts top-interview-150",
+    "test:parser": "tsx src/modules/leetcode/leetcode.parser.test.ts",
+    "test:judge:compare": "tsx src/compiler/judge/judgeOutputCompare.test.ts",
+    "refresh:examples": "tsx scripts/refresh-problem-examples.ts",
+    "judge:benchmark": "tsx scripts/judge-benchmark.ts",
+    "refresh:examples:plans": "tsx scripts/refresh-problem-examples.ts -- --plans=blind-75,top-interview-150",
     "test:compiler": "node scripts/test-compiler.mjs http://localhost:2026",
     "postinstall": "prisma generate"
   },
