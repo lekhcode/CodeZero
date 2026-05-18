@@ -14,7 +14,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { schedulesService } from "@/services/schedules.service";
-import { queryKeys } from "@/hooks/queryKeys";
+import { queryKeys, trackedDuePrefix, trackedTodayPrefix } from "@/hooks/queryKeys";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
 import { glassSx } from "@/theme/theme";
@@ -33,8 +33,8 @@ export function UserSchedulesPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.userSchedules });
       void queryClient.invalidateQueries({ queryKey: queryKeys.todayAssignments });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedToday });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedDue });
+      void queryClient.invalidateQueries({ queryKey: trackedTodayPrefix });
+      void queryClient.invalidateQueries({ queryKey: trackedDuePrefix });
     },
   });
 
@@ -43,8 +43,8 @@ export function UserSchedulesPage() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.userSchedules });
       void queryClient.invalidateQueries({ queryKey: queryKeys.todayAssignments });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedToday });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedDue });
+      void queryClient.invalidateQueries({ queryKey: trackedTodayPrefix });
+      void queryClient.invalidateQueries({ queryKey: trackedDuePrefix });
     },
   });
 

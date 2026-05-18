@@ -3,6 +3,8 @@ import { ApiError } from "../../utils/ApiError.js";
 import type {
   LeetcodeDailyQuestionPayload,
   LeetcodeGraphqlResponse,
+  LeetcodeProblemListItem,
+  LeetcodeProblemListPage,
   LeetcodeQuestionDetailPayload,
 } from "./leetcode.types.js";
 
@@ -107,6 +109,134 @@ async function executeGraphql<T>(params: {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+const PROBLEM_LIST_QUERY = `
+  query problemsetQuestionList(
+    $categorySlug: String
+    $limit: Int
+    $skip: Int
+    $filters: QuestionListFilterInput
+  ) {
+    problemsetQuestionList: questionList(
+      categorySlug: $categorySlug
+      limit: $limit
+      skip: $skip
+      filters: $filters
+    ) {
+      totalNum
+      questions: data {
+        questionFrontendId
+        title
+        titleSlug
+        difficulty
+        isPaidOnly
+        topicTags {
+          name
+        }
+      }
+    }
+  }
+`;
+
+export type ProblemListFilters = {
+  premiumOnly?: boolean;
+};
+
+function normalizeListItem(raw: Record<string, unknown>): LeetcodeProblemListItem | null {
+  const questionFrontendId =
+    typeof raw["questionFrontendId"] === "string"
+      ? raw["questionFrontendId"]
+      : typeof raw["frontendQuestionId"] === "string"
+        ? raw["frontendQuestionId"]
+        : null;
+  const titleSlug = typeof raw["titleSlug"] === "string" ? raw["titleSlug"] : null;
+  const title = typeof raw["title"] === "string" ? raw["title"] : null;
+  const difficulty = typeof raw["difficulty"] === "string" ? raw["difficulty"] : null;
+  const isPaidOnly =
+    typeof raw["isPaidOnly"] === "boolean"
+      ? raw["isPaidOnly"]
+      : typeof raw["paidOnly"] === "boolean"
+        ? raw["paidOnly"]
+        : false;
+
+  if (
+    questionFrontendId === null ||
+    titleSlug === null ||
+    title === null ||
+    difficulty === null
+  ) {
+    return null;
+  }
+
+  const topicTagsRaw = raw["topicTags"];
+  const topicTags = Array.isArray(topicTagsRaw)
+    ? topicTagsRaw
+        .map((t) => {
+          if (t === null || typeof t !== "object") return null;
+          const name = (t as Record<string, unknown>)["name"];
+          return typeof name === "string" ? { name } : null;
+        })
+        .filter((t): t is { name: string } => t !== null)
+    : [];
+
+  return {
+    questionFrontendId,
+    title,
+    titleSlug,
+    difficulty,
+    isPaidOnly,
+    topicTags,
+  };
+}
+
+/** One page of the public problem catalog (metadata only). */
+export async function fetchProblemListPage(params: {
+  skip: number;
+  limit: number;
+  filters?: ProblemListFilters;
+}): Promise<LeetcodeProblemListPage> {
+  const filters =
+    params.filters?.premiumOnly !== undefined
+      ? { premiumOnly: params.filters.premiumOnly }
+      : undefined;
+
+  return executeGraphql({
+    query: PROBLEM_LIST_QUERY,
+    operationName: "problemsetQuestionList",
+    variables: {
+      categorySlug: "",
+      limit: params.limit,
+      skip: params.skip,
+      filters,
+    },
+    emptyMessage: "No problem list returned from LeetCode",
+    errorCode: "LEETCODE_LIST_EMPTY",
+    extract: (data) => {
+      const page = data.problemsetQuestionList ?? null;
+      if (page === null || page.questions === undefined) {
+        throw new ApiError(502, "No problem list returned from LeetCode", {
+          code: "LEETCODE_LIST_EMPTY",
+        });
+      }
+
+      const questions: LeetcodeProblemListItem[] = [];
+      for (const item of page.questions) {
+        if (item === null || typeof item !== "object") {
+          continue;
+        }
+        const normalized = normalizeListItem(item as Record<string, unknown>);
+        if (normalized !== null) {
+          questions.push(normalized);
+        }
+      }
+
+      return {
+        totalNum: typeof page.totalNum === "number" ? page.totalNum : questions.length,
+        questions,
+      };
+    },
+  });
 }
 
 /** Today's active daily challenge (metadata only). */

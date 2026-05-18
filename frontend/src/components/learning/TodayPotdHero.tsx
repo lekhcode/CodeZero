@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Chip,
-  Paper,
   Stack,
   Typography,
   alpha,
@@ -12,6 +11,7 @@ import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
 import { Link as RouterLink } from "react-router-dom";
 import type { TrackedAssignment } from "@/types/api.types";
+import { AnimatedBanner } from "@/components/ui/AnimatedBanner";
 import { DifficultyChip } from "@/components/ui/DifficultyChip";
 import dayjs from "dayjs";
 
@@ -19,37 +19,26 @@ type TodayPotdHeroProps = {
   assignment: TrackedAssignment;
 };
 
-/** Primary focus block for Today — official LeetCode daily challenge only while still pending. */
+const POTD_ACCENT = "#0ea5e9";
+const POTD_ACCENT_2 = "#4f46e5";
+
 export function TodayPotdHero({ assignment }: TodayPotdHeroProps) {
   const { problem } = assignment;
   const dateLabel = dayjs(assignment.assignedDate).format("dddd, MMM D");
 
   return (
-    <Paper
-      elevation={0}
+    <AnimatedBanner
+      accent={POTD_ACCENT}
+      accentSecondary={POTD_ACCENT_2}
       sx={{
         mb: 2,
         borderRadius: 3,
-        overflow: "hidden",
-        position: "relative",
-        border: `1px solid ${alpha("#0ea5e9", 0.35)}`,
-        background: `linear-gradient(145deg, ${alpha("#0ea5e9", 0.18)} 0%, ${alpha("#fff", 0.98)} 42%, ${alpha("#4f46e5", 0.08)} 100%)`,
-        boxShadow: `0 8px 32px ${alpha("#0ea5e9", 0.12)}`,
+        border: `1px solid ${alpha(POTD_ACCENT, 0.35)}`,
+        background: `linear-gradient(145deg, ${alpha(POTD_ACCENT, 0.18)} 0%, ${alpha("#fff", 0.98)} 42%, ${alpha(POTD_ACCENT_2, 0.08)} 100%)`,
+        boxShadow: `0 8px 32px ${alpha(POTD_ACCENT, 0.12)}`,
       }}
     >
-      <Box
-        sx={{
-          position: "absolute",
-          top: -48,
-          right: -32,
-          width: 140,
-          height: 140,
-          borderRadius: "50%",
-          bgcolor: alpha("#0ea5e9", 0.12),
-          pointerEvents: "none",
-        }}
-      />
-      <Box sx={{ p: { xs: 2, sm: 2.5 }, position: "relative" }}>
+      <Box sx={{ p: { xs: 2, sm: 2.5 } }}>
         <Stack direction="row" spacing={1} sx={{ mb: 1.25, flexWrap: "wrap", alignItems: "center" }}>
           <Chip
             icon={<AutoAwesomeRoundedIcon sx={{ fontSize: 16 }} />}
@@ -57,7 +46,7 @@ export function TodayPotdHero({ assignment }: TodayPotdHeroProps) {
             size="small"
             sx={{
               fontWeight: 800,
-              bgcolor: alpha("#0ea5e9", 0.16),
+              bgcolor: alpha(POTD_ACCENT, 0.16),
               color: "#0369a1",
               "& .MuiChip-icon": { color: "#0284c7" },
             }}
@@ -74,7 +63,7 @@ export function TodayPotdHero({ assignment }: TodayPotdHeroProps) {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              bgcolor: alpha("#0ea5e9", 0.2),
+              bgcolor: alpha(POTD_ACCENT, 0.2),
               color: "#0284c7",
               flexShrink: 0,
             }}
@@ -109,15 +98,15 @@ export function TodayPotdHero({ assignment }: TodayPotdHeroProps) {
               py: 1.1,
               fontWeight: 800,
               whiteSpace: "nowrap",
-              background: "linear-gradient(135deg, #0ea5e9, #4f46e5)",
-              boxShadow: `0 4px 14px ${alpha("#0ea5e9", 0.35)}`,
+              background: `linear-gradient(135deg, ${POTD_ACCENT}, ${POTD_ACCENT_2})`,
+              boxShadow: `0 4px 14px ${alpha(POTD_ACCENT, 0.35)}`,
             }}
           >
             Start POTD
           </Button>
         </Stack>
       </Box>
-    </Paper>
+    </AnimatedBanner>
   );
 }
 
@@ -129,14 +118,16 @@ export function TodayPotdEnrollBanner({ enrolled }: TodayPotdEnrollProps) {
   if (enrolled) return null;
 
   return (
-    <Paper
-      elevation={0}
+    <AnimatedBanner
+      accent={POTD_ACCENT}
+      accentSecondary={POTD_ACCENT_2}
+      subtle
       sx={{
         mb: 2,
         p: 2,
         borderRadius: 3,
-        border: `1px dashed ${alpha("#0ea5e9", 0.45)}`,
-        bgcolor: alpha("#0ea5e9", 0.04),
+        border: `1px dashed ${alpha(POTD_ACCENT, 0.45)}`,
+        bgcolor: alpha(POTD_ACCENT, 0.04),
       }}
     >
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ alignItems: { sm: "center" } }}>
@@ -152,6 +143,6 @@ export function TodayPotdEnrollBanner({ enrolled }: TodayPotdEnrollProps) {
           Enable Daily POTD
         </Button>
       </Stack>
-    </Paper>
+    </AnimatedBanner>
   );
 }

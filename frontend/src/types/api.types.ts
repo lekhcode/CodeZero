@@ -79,6 +79,55 @@ export type ProblemDetail = {
   isPremium: boolean;
 };
 
+export type ProblemCatalogItem = {
+  id: string;
+  leetcodeId: number;
+  title: string;
+  slug: string;
+  difficulty: DifficultyLevel;
+  topics: string[];
+  isPremium: boolean;
+  hasDetail: boolean;
+};
+
+export type ProblemCatalogPage = {
+  items: ProblemCatalogItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type ProblemTopicTag = {
+  name: string;
+  count: number;
+};
+
+export type SolvedDifficultyStats = {
+  total: number;
+  easy: number;
+  medium: number;
+  hard: number;
+};
+
+export type ProblemCatalogStats = {
+  total: number;
+  easy: number;
+  medium: number;
+  hard: number;
+};
+
+export type ProblemCatalogFilters = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  difficulty?: DifficultyLevel[];
+  topics?: string[];
+  includePremium?: boolean;
+  /** Server-side random sample (dashboard preview). */
+  shuffle?: boolean;
+};
+
 export type StudyPlanProgress = {
   dayIndex: number;
   dailyCount: number;

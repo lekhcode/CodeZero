@@ -86,4 +86,11 @@ export const env = {
   COMPILER_DOCKER_PIDS_LIMIT: parsePositiveInt("COMPILER_DOCKER_PIDS_LIMIT", 64),
   COMPILER_MAX_CODE_BYTES: parsePositiveInt("COMPILER_MAX_CODE_BYTES", 65_536),
   COMPILER_STALE_RUNNING_MS: parsePositiveInt("COMPILER_STALE_RUNNING_MS", 600_000),
+  /**
+   * Optional secret for `POST /api/v1/leetcode/dump/*` (header `x-leetcode-dump-token`).
+   * When unset, dump routes require a normal JWT (`Authorization: Bearer …`).
+   */
+  LEETCODE_DUMP_TOKEN: (process.env["LEETCODE_DUMP_TOKEN"] ?? "").trim(),
+  /** Default delay between LeetCode detail fetches during dump (ms). */
+  LEETCODE_DUMP_DELAY_MS: parsePositiveInt("LEETCODE_DUMP_DELAY_MS", 350),
 } as const;

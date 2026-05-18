@@ -1,6 +1,7 @@
-import { Box, Container, Typography, alpha } from "@mui/material";
+import { Box, Container, alpha } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import { motion } from "framer-motion";
+import { CodeZeroBrandLink } from "@/components/brand/CodeZeroBrandLink";
 import { glassSx } from "@/theme/theme";
 
 export function AuthLayout() {
@@ -17,21 +18,8 @@ export function AuthLayout() {
     >
       <Container maxWidth="sm">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <Box sx={{ textAlign: "center", mb: 4 }}>
-            <Typography
-              variant="h3"
-              sx={{
-                fontWeight: 900,
-                background: "linear-gradient(135deg, #4f46e5, #0ea5e9)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              CodeZero
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 1 }}>
-              Your AI-powered LeetCode learning operating system
-            </Typography>
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
+            <CodeZeroBrandLink size={44} />
           </Box>
         </motion.div>
         <motion.div

@@ -7,6 +7,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { DifficultyChip } from "@/components/ui/DifficultyChip";
 import { ProblemJudgeWorkspace } from "@/modules/judge/ProblemJudgeWorkspace";
+import { BrainCacheProblemPanel } from "@/components/brainCache/BrainCacheProblemPanel";
 import { problemsService } from "@/services/problems.service";
 import { judgeService } from "@/services/judge.service";
 import { queryKeys } from "@/hooks/queryKeys";
@@ -138,6 +139,10 @@ export function ProblemDetailPage() {
             judgeSolved={judgeQuery.data.solved}
             recentSubmissions={judgeQuery.data.recentSubmissions}
           />
+
+          {isAuthenticated && judgeQuery.data ? (
+            <BrainCacheProblemPanel problemId={judgeQuery.data.problemId} slug={slug} />
+          ) : null}
 
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", mb: 0.75, flexShrink: 0 }}>
             {detailQuery.data.topics.map((t) => (

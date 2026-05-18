@@ -5,19 +5,21 @@
   "description": "Backend foundation for an AI-powered LeetCode learning platform",
   "type": "module",
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=20.19.0",
+    "npm": ">=10.0.0"
   },
   "scripts": {
+    "preinstall": "node scripts/check-node-version.mjs",
     "dev": "tsx watch src/server.ts",
     "compiler:worker": "tsx src/compiler/workers/bootstrap.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "db:push": "prisma db push",
-    "db:studio": "prisma studio",
+    "db:generate": "node scripts/check-node-version.mjs && prisma generate",
+    "db:migrate": "node scripts/check-node-version.mjs && prisma migrate dev",
+    "db:migrate:deploy": "node scripts/check-node-version.mjs && prisma migrate deploy",
+    "db:push": "node scripts/check-node-version.mjs && prisma db push",
+    "db:studio": "node scripts/check-node-version.mjs && prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "sync:blind-75": "tsx scripts/sync-study-plan.ts blind-75",
     "sync:top-interview-150": "tsx scripts/sync-study-plan.ts top-interview-150",

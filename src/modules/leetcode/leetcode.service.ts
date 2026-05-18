@@ -19,7 +19,7 @@ import type { ProblemDetailResponse } from "./leetcode.types.js";
 /**
  * Sync full problem row + API DTO. Returns DB row so callers can link calendar tables (e.g. `daily_potd`).
  */
-async function syncProblemBySlug(slug: string): Promise<{
+export async function syncProblemBySlug(slug: string): Promise<{
   row: Problem;
   response: ProblemDetailResponse;
 }> {

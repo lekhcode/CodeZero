@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   Box,
   FormControl,
@@ -102,6 +103,21 @@ export function SubmissionActivityHeatmap({
 }: SubmissionActivityHeatmapProps) {
   const monthBlocks = buildMonthBlocks(activity.days);
   const selectValue = selection === ROLLING_VALUE ? ROLLING_VALUE : String(selection);
+  const heatmapScrollRef = useRef<HTMLDivElement>(null);
+
+  const monthBlocksKey = monthBlocks.map((b) => b.monthKey).join(",");
+
+  useEffect(() => {
+    const el = heatmapScrollRef.current;
+    if (!el || monthBlocks.length === 0) return;
+
+    const scrollToCurrentMonth = () => {
+      el.scrollLeft = el.scrollWidth - el.clientWidth;
+    };
+
+    scrollToCurrentMonth();
+    requestAnimationFrame(scrollToCurrentMonth);
+  }, [monthBlocksKey, selection]);
 
   return (
     <Box sx={{ width: "100%", boxSizing: "border-box", minWidth: 0 }}>
@@ -153,7 +169,7 @@ export function SubmissionActivityHeatmap({
         </Box>
       </Box>
 
-      <Box sx={{ width: "100%", overflowX: "auto", pb: 0.5 }}>
+      <Box ref={heatmapScrollRef} sx={{ width: "100%", overflowX: "auto", pb: 0.5 }}>
         <Box sx={{ display: "flex", alignItems: "flex-end", minWidth: "min-content", py: 0.25 }}>
           {monthBlocks.map((block, bi) => (
             <Box

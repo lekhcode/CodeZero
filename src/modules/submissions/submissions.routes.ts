@@ -25,6 +25,8 @@ submissionsRouter.get(
   asyncHandler(submissionsController.getActivity),
 );
 
+submissionsRouter.get("/solved-stats", asyncHandler(submissionsController.getSolvedStats));
+
 submissionsRouter.get(
   "/:id",
   validateParams(submissionIdParamsSchema),

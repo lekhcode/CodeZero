@@ -1,4 +1,5 @@
 import type {
+  SolvedDifficultyStats,
   SubmissionActivitySummary,
   SubmissionDetailResponse,
   SubmissionStatus,
@@ -15,6 +16,10 @@ export type ListSubmissionsParams = {
 };
 
 export const submissionsService = {
+  getSolvedStats() {
+    return unwrap<SolvedDifficultyStats>(api.get("/api/v1/submissions/solved-stats"));
+  },
+
   getActivity(params?: { year?: number; rolling?: boolean }) {
     return unwrap<SubmissionActivitySummary>(
       api.get("/api/v1/submissions/activity", {

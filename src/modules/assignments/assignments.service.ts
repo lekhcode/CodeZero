@@ -1,37 +1,17 @@
 import { type DifficultyLevel, ScheduleType } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
+import { findTodayDailyPotdSlot } from "../leetcode/dailyPotd.service.js";
 import { mapProblemRowToDetailResponse } from "../leetcode/leetcode.mapper.js";
 import type { TodayAssignmentItem, TodayAssignmentsResponse } from "./assignments.types.js";
 import {
   computePlanDayIndex,
   filterPlanProblemsByDifficulty,
   sliceStudyPlanForDay,
-  startOfUtcDay,
   type TemplateProblemRow,
 } from "./studyPlanAssignment.js";
 
 function formatDateOnly(date: Date): string {
   return date.toISOString().slice(0, 10);
-}
-
-/**
- * Latest synced LeetCode POTD calendar row (prefer UTC today, else most recent challenge date).
- */
-async function findCurrentDailyPotdSlot() {
-  const todayUtc = startOfUtcDay(new Date());
-
-  const todaySlot = await prisma.dailyPotd.findUnique({
-    where: { challengeDate: todayUtc },
-    include: { problem: true },
-  });
-  if (todaySlot !== null) {
-    return todaySlot;
-  }
-
-  return prisma.dailyPotd.findFirst({
-    orderBy: { challengeDate: "desc" },
-    include: { problem: true },
-  });
 }
 
 function groupTemplateProblems(
@@ -168,7 +148,7 @@ export async function getTodayAssignmentsForUser(userId: string): Promise<TodayA
   const problemsByTemplateId = groupTemplateProblems(templateProblemRows);
 
   const needsPotd = activeSchedules.some((s) => s.template.type === ScheduleType.DAILY_POTD);
-  const potdSlot = needsPotd ? await findCurrentDailyPotdSlot() : null;
+  const potdSlot = needsPotd ? await findTodayDailyPotdSlot() : null;
 
   const assignments: TodayAssignmentItem[] = activeSchedules.map((schedule) => {
     const base = {

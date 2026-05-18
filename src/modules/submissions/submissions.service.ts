@@ -1,4 +1,4 @@
-import { JudgeMode, type SubmissionStatus } from "@prisma/client";
+import { DifficultyLevel, JudgeMode, type SubmissionStatus } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../utils/ApiError.js";
 import { collapseConsecutiveByProblem } from "./submissionCollapse.js";
@@ -123,6 +123,46 @@ export async function listSubmissionsForUser(
     total,
     totalPages: Math.max(1, Math.ceil(total / limit)),
     rawTotal,
+  };
+}
+
+export type SolvedDifficultyStats = {
+  total: number;
+  easy: number;
+  medium: number;
+  hard: number;
+};
+
+/** Distinct problems the user has fully solved (accepted submit), grouped by difficulty. */
+export async function getSolvedDifficultyStatsForUser(
+  userId: string,
+): Promise<SolvedDifficultyStats> {
+  const grouped = await prisma.problem.groupBy({
+    by: ["difficulty"],
+    where: { userSolves: { some: { userId } } },
+    _count: { _all: true },
+  });
+
+  let easy = 0;
+  let medium = 0;
+  let hard = 0;
+
+  for (const row of grouped) {
+    const count = row._count._all;
+    if (row.difficulty === DifficultyLevel.EASY) {
+      easy = count;
+    } else if (row.difficulty === DifficultyLevel.MEDIUM) {
+      medium = count;
+    } else if (row.difficulty === DifficultyLevel.HARD) {
+      hard = count;
+    }
+  }
+
+  return {
+    total: easy + medium + hard,
+    easy,
+    medium,
+    hard,
   };
 }
 

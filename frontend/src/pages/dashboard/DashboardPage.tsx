@@ -7,6 +7,7 @@ import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedI
 import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded";
 import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
 import CodeRoundedIcon from "@mui/icons-material/CodeRounded";
+import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
 import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
 import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import ExploreRoundedIcon from "@mui/icons-material/ExploreRounded";
@@ -14,6 +15,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { CompactAssignmentRow } from "@/components/learning/CompactAssignmentRow";
+import { BrainCacheCompactRevisionRow } from "@/components/brainCache/BrainCacheCompactRevisionRow";
 import { SubmissionHistoryRow } from "@/components/learning/SubmissionHistoryRow";
 import { SolveProgressRing } from "@/components/learning/SolveProgressRing";
 import { LearningTrendChart } from "@/components/learning/LearningTrendChart";
@@ -21,8 +23,11 @@ import { learningService } from "@/services/learning.service";
 import { insightsService } from "@/services/insights.service";
 import { submissionsService } from "@/services/submissions.service";
 import { schedulesService } from "@/services/schedules.service";
+import { brainCacheService } from "@/services/brainCache.service";
 import { queryKeys } from "@/hooks/queryKeys";
+import { ProblemCatalogInfiniteList } from "@/components/problems/ProblemCatalogInfiniteList";
 import { useAuthStore } from "@/store/authStore";
+import { AnimatedBanner } from "@/components/ui/AnimatedBanner";
 import { labAccentGradient, miui, miuiCardSx, sectionContentSx } from "@/theme/theme";
 import dayjs from "dayjs";
 
@@ -96,12 +101,12 @@ export function DashboardPage() {
   const todayLabel = dayjs().format("dddd, MMM D");
 
   const todayQuery = useQuery({
-    queryKey: queryKeys.trackedToday,
+    queryKey: queryKeys.trackedToday(),
     queryFn: learningService.getTodayAssignments,
   });
 
   const dueQuery = useQuery({
-    queryKey: queryKeys.trackedDue,
+    queryKey: queryKeys.trackedDue(),
     queryFn: learningService.getDueAssignments,
   });
 
@@ -120,10 +125,22 @@ export function DashboardPage() {
     queryFn: insightsService.getLearningInsights,
   });
 
+  const brainTodayQuery = useQuery({
+    queryKey: queryKeys.brainCacheToday(),
+    queryFn: brainCacheService.todayRevisions,
+  });
+
+  const brainOverdueQuery = useQuery({
+    queryKey: queryKeys.brainCacheOverdue(),
+    queryFn: brainCacheService.overdueRevisions,
+  });
+
   const stats = todayQuery.data?.stats;
   const pendingToday = todayQuery.data?.assignments.filter((a) => a.status === "PENDING") ?? [];
   const solvedToday = todayQuery.data?.assignments.filter((a) => a.status === "SOLVED") ?? [];
   const dueAssignments = dueQuery.data?.assignments ?? [];
+  const brainDueToday = brainTodayQuery.data ?? [];
+  const brainOverdue = brainOverdueQuery.data ?? [];
   const recentSubmissions = submissionsQuery.data?.submissions ?? [];
   const activeCount = schedulesQuery.data?.filter((s) => s.active).length ?? 0;
 
@@ -135,32 +152,17 @@ export function DashboardPage() {
     <PageContainer sx={{ maxWidth: "100%" }}>
       <motion.div variants={stagger} initial="hidden" animate="show">
         <motion.div variants={fadeUp}>
-          <Box
+          <AnimatedBanner
             sx={{
               mb: 2,
               p: 2,
               borderRadius: 3,
               background: `linear-gradient(120deg, ${alpha(miui.primary, 0.12)} 0%, ${alpha(miui.accent, 0.06)} 40%, ${miui.paper} 100%)`,
               border: `1px solid ${miui.border}`,
-              position: "relative",
-              overflow: "clip",
               boxSizing: "border-box",
             }}
           >
-            <Box
-              sx={{
-                position: "absolute",
-                right: -30,
-                top: -30,
-                width: 140,
-                height: 140,
-                borderRadius: "50%",
-                background: labAccentGradient,
-                opacity: 0.15,
-                filter: "blur(32px)",
-              }}
-            />
-            <Grid container spacing={2} sx={{ position: "relative", zIndex: 1 }}>
+            <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 8 }}>
                 <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 700 }}>
                   {todayLabel}
@@ -198,6 +200,15 @@ export function DashboardPage() {
                   </Button>
                   <Button
                     component={RouterLink}
+                    to="/lab"
+                    variant="outlined"
+                    size="small"
+                    startIcon={<MenuBookRoundedIcon />}
+                  >
+                    Problems
+                  </Button>
+                  <Button
+                    component={RouterLink}
                     to="/submissions"
                     variant="outlined"
                     size="small"
@@ -221,20 +232,8 @@ export function DashboardPage() {
                 </Grid>
               )}
             </Grid>
-          </Box>
+          </AnimatedBanner>
         </motion.div>
-
-        <Box sx={{ mb: 2 }}>
-          {insightsQuery.isLoading ? (
-            <LoadingSkeleton variant="detail" />
-          ) : insightsQuery.isError ? (
-            <Alert severity="warning" sx={{ borderRadius: 2 }}>
-              Could not load momentum chart. Restart backend and refresh.
-            </Alert>
-          ) : insightsQuery.data ? (
-            <LearningTrendChart insights={insightsQuery.data} />
-          ) : null}
-        </Box>
 
         {todayQuery.isLoading ? (
           <LoadingSkeleton variant="detail" />
@@ -281,6 +280,33 @@ export function DashboardPage() {
               </Alert>
             )}
 
+            <motion.div variants={fadeUp}>
+              <Box sx={{ mb: 2 }}>
+                {insightsQuery.isLoading ? (
+                  <LoadingSkeleton variant="detail" />
+                ) : insightsQuery.isError ? (
+                  <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                    Could not load momentum chart. Restart backend and refresh.
+                  </Alert>
+                ) : insightsQuery.data ? (
+                  <LearningTrendChart insights={insightsQuery.data} />
+                ) : null}
+              </Box>
+            </motion.div>
+
+            <motion.div variants={fadeUp}>
+              <Panel title="Problem library" actionLabel="Open Lab" actionTo="/lab" sx={{ mb: 2 }}>
+                <ProblemCatalogInfiniteList
+                  filters={{ shuffle: true }}
+                  pageSize={20}
+                  compact
+                  maxHeight={380}
+                  virtualized={false}
+                  enableLoadMore={false}
+                />
+              </Panel>
+            </motion.div>
+
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, lg: 7 }}>
                 <motion.div variants={fadeUp}>
@@ -324,6 +350,33 @@ export function DashboardPage() {
                     )}
                   </Panel>
                 </motion.div>
+
+                {(brainDueToday.length > 0 || brainOverdue.length > 0) && (
+                  <motion.div variants={fadeUp}>
+                    <Panel
+                      title="Brain Cache"
+                      actionLabel="Open"
+                      actionTo="/brain-cache"
+                      count={brainDueToday.length + brainOverdue.length}
+                      sx={{ mt: 2, borderLeft: "3px solid #8b5cf6" }}
+                    >
+                      {brainDueToday.slice(0, 2).map((t, i) => (
+                        <BrainCacheCompactRevisionRow
+                          key={t.id}
+                          task={t}
+                          isLast={brainDueToday.length <= 2 && brainOverdue.length === 0 && i === brainDueToday.length - 1}
+                        />
+                      ))}
+                      {brainOverdue.slice(0, 2).map((t, i) => (
+                        <BrainCacheCompactRevisionRow
+                          key={t.id}
+                          task={t}
+                          isLast={i === Math.min(brainOverdue.length, 2) - 1}
+                        />
+                      ))}
+                    </Panel>
+                  </motion.div>
+                )}
               </Grid>
 
               <Grid size={{ xs: 12, lg: 5 }}>

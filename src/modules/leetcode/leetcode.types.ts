@@ -31,12 +31,46 @@ export type LeetcodeQuestionDetailPayload = LeetcodeQuestionSummary & {
   hints: string[] | null;
 };
 
+/** One row from LeetCode `questionList` — client layer only. */
+export type LeetcodeProblemListItem = {
+  questionFrontendId: string;
+  title: string;
+  titleSlug: string;
+  difficulty: string;
+  isPaidOnly: boolean;
+  topicTags: Array<{ name: string }>;
+};
+
+export type LeetcodeProblemListPage = {
+  totalNum: number;
+  questions: LeetcodeProblemListItem[];
+};
+
 export type LeetcodeGraphqlResponse = {
   data?: {
     activeDailyCodingChallengeQuestion?: LeetcodeDailyQuestionPayload | null;
     question?: LeetcodeQuestionDetailPayload | null;
+    problemsetQuestionList?: LeetcodeProblemListPage | null;
   };
   errors?: Array<{ message: string }>;
+};
+
+export type CatalogDumpResult = {
+  totalFromLeetcode: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  durationMs: number;
+};
+
+export type DetailsDumpResult = {
+  processed: number;
+  synced: number;
+  skipped: number;
+  failed: number;
+  remaining: number;
+  failures: Array<{ slug: string; reason: string }>;
+  durationMs: number;
 };
 
 /** Metadata-only normalized row (POTD sync). */

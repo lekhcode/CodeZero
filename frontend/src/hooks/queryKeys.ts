@@ -1,26 +1,46 @@
+import { getUtcDateKey } from "@/utils/date";
+
+/** Prefixes for partial invalidation (any calendar day). */
+export const trackedTodayPrefix = ["learning", "today"] as const;
+export const trackedDuePrefix = ["learning", "due"] as const;
+
 /** Centralized React Query keys — prevents typos and eases invalidation. */
 export const queryKeys = {
   me: ["auth", "me"] as const,
   templates: ["schedule-templates"] as const,
   userSchedules: ["user-schedules"] as const,
   todayAssignments: ["assignments", "today"] as const,
-  trackedToday: ["learning", "today"] as const,
-  trackedDue: ["learning", "due"] as const,
+  trackedToday: (dateKey = getUtcDateKey()) => [...trackedTodayPrefix, dateKey] as const,
+  trackedDue: (dateKey = getUtcDateKey()) => [...trackedDuePrefix, dateKey] as const,
   trackedHistory: (page: number) => ["learning", "history", page] as const,
   submissionActivity: (selection: string | number) => ["submissions", "activity", selection] as const,
   learningInsights: ["learning", "insights"] as const,
   submissions: (filters: Record<string, unknown>) => ["submissions", filters] as const,
+  submissionsSolvedStats: ["submissions", "solved-stats"] as const,
   submission: (id: string) => ["submissions", id] as const,
   problem: (slug: string) => ["problems", slug] as const,
+  problemCatalog: (filters: Record<string, unknown>) => ["problems", "catalog", filters] as const,
+  problemTopics: (includePremium: boolean) => ["problems", "topics", includePremium] as const,
+  problemCatalogStats: (includePremium: boolean) => ["problems", "stats", includePremium] as const,
   judgeMeta: (slug: string) => ["judge-meta", slug] as const,
   dailyProblem: ["daily-problem"] as const,
+  brainCachePlaylists: ["brain-cache", "playlists"] as const,
+  brainCacheToday: (dateKey = getUtcDateKey()) => ["brain-cache", "revisions", "today", dateKey] as const,
+  brainCacheOverdue: (dateKey = getUtcDateKey()) =>
+    ["brain-cache", "revisions", "overdue", dateKey] as const,
+  brainCacheAnalytics: ["brain-cache", "analytics"] as const,
+  brainCacheMemberships: (slug: string) => ["brain-cache", "memberships", slug] as const,
+  brainCachePlaylistProblems: (playlistId: string) =>
+    ["brain-cache", "playlist", playlistId, "problems"] as const,
 };
+
+export const brainCacheKeyPrefix = ["brain-cache"] as const;
 
 /** Invalidate all learning-progress queries after a successful submit. */
 /** Prefixes invalidated after a successful full submit. */
 export const learningProgressKeyPrefixes = [
-  queryKeys.trackedToday,
-  queryKeys.trackedDue,
+  trackedTodayPrefix,
+  trackedDuePrefix,
   queryKeys.todayAssignments,
   ["submissions", "activity"] as const,
   queryKeys.learningInsights,

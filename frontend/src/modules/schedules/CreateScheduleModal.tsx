@@ -15,7 +15,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import type { ScheduleTemplate } from "@/types/api.types";
 import { schedulesService } from "@/services/schedules.service";
-import { queryKeys } from "@/hooks/queryKeys";
+import { queryKeys, trackedDuePrefix, trackedTodayPrefix } from "@/hooks/queryKeys";
 import { DIFFICULTY_OPTIONS } from "@/utils/difficulty";
 
 const schema = z.object({
@@ -55,8 +55,8 @@ export function CreateScheduleModal({ template, open, onClose }: Props) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.userSchedules });
       void queryClient.invalidateQueries({ queryKey: queryKeys.todayAssignments });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedToday });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.trackedDue });
+      void queryClient.invalidateQueries({ queryKey: trackedTodayPrefix });
+      void queryClient.invalidateQueries({ queryKey: trackedDuePrefix });
       reset();
       onClose();
     },

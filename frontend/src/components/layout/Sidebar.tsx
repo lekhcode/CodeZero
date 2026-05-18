@@ -7,17 +7,19 @@ import {
   ListItemIcon,
   ListItemText,
   Tooltip,
-  Typography,
   alpha,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import { CodeZeroBrandLink } from "@/components/brand/CodeZeroBrandLink";
 import { NavLink, useLocation } from "react-router-dom";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
+import CodeRoundedIcon from "@mui/icons-material/CodeRounded";
 import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
 import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import ExploreRoundedIcon from "@mui/icons-material/ExploreRounded";
 import EventNoteRoundedIcon from "@mui/icons-material/EventNoteRounded";
+import PsychologyRoundedIcon from "@mui/icons-material/PsychologyRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import MenuOpenRoundedIcon from "@mui/icons-material/MenuOpenRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
@@ -28,8 +30,10 @@ const DRAWER_WIDTH = 260;
 const DRAWER_COLLAPSED = 72;
 
 const NAV = [
-  { to: "/dashboard", label: "Lab", icon: <DashboardRoundedIcon /> },
+  { to: "/dashboard", label: "Dashboard", icon: <DashboardRoundedIcon /> },
+  { to: "/lab", label: "Lab", icon: <CodeRoundedIcon /> },
   { to: "/today", label: "Today", icon: <TodayRoundedIcon /> },
+  { to: "/brain-cache", label: "Brain Cache", icon: <PsychologyRoundedIcon /> },
   { to: "/submissions", label: "Submissions", icon: <HistoryRoundedIcon /> },
   { to: "/templates", label: "Explore", icon: <ExploreRoundedIcon /> },
   { to: "/schedules", label: "My schedules", icon: <EventNoteRoundedIcon /> },
@@ -59,23 +63,7 @@ function NavContent({
       >
         {!collapsed ? (
           <>
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 900,
-                  background: "linear-gradient(135deg, #FF6B00, #14B8A6)",
-                  WebkitBackgroundClip: "text",
-                  WebkitTextFillColor: "transparent",
-                  lineHeight: 1.1,
-                }}
-              >
-                CodeZero
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                AI learning OS
-              </Typography>
-            </Box>
+            <CodeZeroBrandLink size={36} onClick={onNavigate} />
             <Tooltip title="Collapse sidebar" placement="right">
               <IconButton size="small" onClick={toggleSidebarCollapsed} aria-label="Collapse sidebar">
                 <MenuOpenRoundedIcon fontSize="small" sx={{ transform: "rotate(180deg)" }} />
@@ -83,11 +71,18 @@ function NavContent({
             </Tooltip>
           </>
         ) : (
-          <Tooltip title="Expand sidebar" placement="right">
-            <IconButton onClick={toggleSidebarCollapsed} aria-label="Expand sidebar" size="small">
-              <ChevronRightRoundedIcon />
-            </IconButton>
-          </Tooltip>
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+            <Tooltip title="Dashboard" placement="right">
+              <span>
+                <CodeZeroBrandLink size={34} compact onClick={onNavigate} />
+              </span>
+            </Tooltip>
+            <Tooltip title="Expand sidebar" placement="right">
+              <IconButton onClick={toggleSidebarCollapsed} aria-label="Expand sidebar" size="small">
+                <ChevronRightRoundedIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
         )}
       </Box>
       <List sx={{ flex: 1, px: collapsed ? 0 : undefined }}>

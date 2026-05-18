@@ -5,11 +5,13 @@ import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
+import { LabPage } from "@/pages/lab/LabPage";
 import { TodayPage } from "@/pages/today/TodayPage";
 import { SubmissionsPage } from "@/pages/submissions/SubmissionsPage";
 import { TemplatesPage } from "@/pages/templates/TemplatesPage";
 import { UserSchedulesPage } from "@/pages/schedules/UserSchedulesPage";
 import { ProblemDetailPage } from "@/pages/problems/ProblemDetailPage";
+import { BrainCachePage } from "@/pages/brainCache/BrainCachePage";
 
 export function AppRouter() {
   return (
@@ -23,10 +25,12 @@ export function AppRouter() {
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/lab" element={<LabPage />} />
             <Route path="/today" element={<TodayPage />} />
             <Route path="/submissions" element={<SubmissionsPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/schedules" element={<UserSchedulesPage />} />
+            <Route path="/brain-cache" element={<BrainCachePage />} />
             <Route path="/problems/:slug" element={<ProblemDetailPage />} />
           </Route>
         </Route>

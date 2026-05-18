@@ -28,6 +28,12 @@ export async function getActivity(req: Request, res: Response): Promise<void> {
   ApiResponse.success(res, result);
 }
 
+export async function getSolvedStats(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const stats = await submissionsService.getSolvedDifficultyStatsForUser(userId);
+  ApiResponse.success(res, stats);
+}
+
 export async function list(req: Request, res: Response): Promise<void> {
   const userId = requireUserId(req);
   const query = readValidatedQuery<ListSubmissionsQuery>(req);

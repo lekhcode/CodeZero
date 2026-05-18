@@ -92,6 +92,8 @@ model User {
   judgeSubmissions     JudgeSubmission[]
   solvedProblems       UserProblemSolve[]
   assignments          Assignment[]
+  brainCachePlaylists  BrainCachePlaylist[]
+  brainCacheRevisionTasks BrainCacheRevisionTask[]
 
   @@map("users")
 }
@@ -264,8 +266,88 @@ model Problem {
   judgeSubmissions   JudgeSubmission[]
   userSolves         UserProblemSolve[]
   assignments        Assignment[]
+  brainCacheEntries  BrainCachePlaylistProblem[]
+  brainCacheTasks    BrainCacheRevisionTask[]
 
   @@map("problems")
+}
+
+// ---------------------------------------------------------------------------
+// Brain Cache — spaced-repetition playlists (independent from schedules/assignments).
+// ---------------------------------------------------------------------------
+
+enum BrainCacheRevisionStatus {
+  PENDING
+  DUE
+  OVERDUE
+  COMPLETED
+  SKIPPED
+}
+
+model BrainCachePlaylist {
+  id                   String   @id @default(uuid()) @db.Uuid
+  userId               String   @db.Uuid
+  name                 String
+  /** Revisit every N calendar days after last completion (or first add). */
+  revisionIntervalDays Int      @default(7)
+  /** Optional ISO date strings `YYYY-MM-DD` for one-off revision days. */
+  customRevisionDates  Json?
+  notifyEmail          Boolean  @default(false)
+  notifyWhatsapp       Boolean  @default(false)
+  notifyInApp          Boolean  @default(true)
+  notifyPush           Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user     User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problems BrainCachePlaylistProblem[]
+  tasks    BrainCacheRevisionTask[]
+
+  @@index([userId])
+  @@map("brain_cache_playlists")
+}
+
+model BrainCachePlaylistProblem {
+  id         String   @id @default(uuid()) @db.Uuid
+  playlistId String   @db.Uuid
+  problemId  String   @db.Uuid
+  addedAt    DateTime @default(now())
+
+  playlist BrainCachePlaylist       @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  problem  Problem                    @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  tasks    BrainCacheRevisionTask[]
+
+  @@unique([playlistId, problemId])
+  @@index([playlistId])
+  @@index([problemId])
+  @@map("brain_cache_playlist_problems")
+}
+
+model BrainCacheRevisionTask {
+  id                String                   @id @default(uuid()) @db.Uuid
+  userId            String                   @db.Uuid
+  playlistId        String                   @db.Uuid
+  playlistProblemId String                   @db.Uuid
+  problemId         String                   @db.Uuid
+  dueDate           DateTime                 @db.Date
+  completedAt       DateTime?
+  status            BrainCacheRevisionStatus @default(PENDING)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+
+  user            User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  playlist        BrainCachePlaylist        @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  playlistProblem BrainCachePlaylistProblem @relation(fields: [playlistProblemId], references: [id], onDelete: Cascade)
+  problem         Problem                   @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([playlistProblemId, dueDate])
+  @@index([userId])
+  @@index([userId, dueDate])
+  @@index([userId, status])
+  @@index([playlistId])
+  @@index([dueDate])
+  @@index([status])
+  @@map("brain_cache_revision_tasks")
 }
 
 /** Per-language starter body; user never writes main() — harness is generated. */

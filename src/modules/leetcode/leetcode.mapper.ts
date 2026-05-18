@@ -45,7 +45,7 @@ function parseLeetcodeId(questionFrontendId: string): number {
   return leetcodeId;
 }
 
-function mapSummaryToBase(summary: LeetcodeQuestionSummary): NormalizedDailyProblem {
+export function mapSummaryToBase(summary: LeetcodeQuestionSummary): NormalizedDailyProblem {
   return {
     leetcodeId: parseLeetcodeId(summary.questionFrontendId),
     title: summary.title.trim(),

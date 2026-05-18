@@ -4,10 +4,12 @@ import { userAssignmentsRouter } from "../modules/assignments/userAssignments.ro
 import { submissionsRouter } from "../modules/submissions/submissions.routes.js";
 import { plansRouter } from "../modules/plans/plans.routes.js";
 import { leetcodeRouter, problemsRouter } from "../modules/leetcode/leetcode.routes.js";
+import { leetcodeDumpRouter } from "../modules/leetcode/leetcode.dump.routes.js";
 import { scheduleTemplatesRouter } from "../modules/scheduleTemplates/scheduleTemplates.routes.js";
 import { userSchedulesRouter } from "../modules/userSchedules/userSchedules.routes.js";
 import { authRouter } from "../modules/auth/auth.routes.js";
 import { usersRouter } from "../modules/users/users.routes.js";
+import { brainCacheRouter } from "../modules/brainCache/brainCache.routes.js";
 import { compilerRouter } from "../compiler/api/compiler.routes.js";
 import { problemByIdAdminRouter } from "../compiler/api/adminJudge.routes.js";
 import { judgePollRouter } from "../compiler/api/judgePoll.routes.js";
@@ -31,10 +33,12 @@ apiV1.use("/user-schedules", userSchedulesRouter);
 apiV1.use("/assignments", assignmentsRouter);
 apiV1.use("/plans", plansRouter);
 apiV1.use("/daily-problem", leetcodeRouter);
+apiV1.use("/leetcode/dump", leetcodeDumpRouter);
 apiV1.use("/problems", problemsRouter);
 apiV1.use("/problems/by-id", problemByIdAdminRouter);
 apiV1.use("/judge", judgePollRouter);
 apiV1.use("/compiler", compilerRouter);
+apiV1.use("/brain-cache", brainCacheRouter);
 
 routes.use("/api/v1", apiV1);
 routes.use(rootRouter);

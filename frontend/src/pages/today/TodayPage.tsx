@@ -8,6 +8,7 @@ import { FixedPageShell, ScrollRegion } from "@/components/layout/FixedPageShell
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { StatsStrip } from "@/components/ui/StatsStrip";
+import { OverduePaginatedPanel } from "@/components/learning/OverduePaginatedPanel";
 import { ScheduleAssignmentGroup } from "@/components/learning/ScheduleAssignmentGroup";
 import { TodayPotdEnrollBanner, TodayPotdHero } from "@/components/learning/TodayPotdHero";
 import { learningService } from "@/services/learning.service";
@@ -15,6 +16,7 @@ import { schedulesService } from "@/services/schedules.service";
 import { queryKeys } from "@/hooks/queryKeys";
 import type { TrackedAssignment } from "@/types/api.types";
 import { labAccentGradient, miui, sectionCardSx, sectionContentSx } from "@/theme/theme";
+import { getUtcDateKey } from "@/utils/date";
 import dayjs from "dayjs";
 
 function groupBySchedule(items: TrackedAssignment[]) {
@@ -40,15 +42,20 @@ function groupBySchedule(items: TrackedAssignment[]) {
 
 export function TodayPage() {
   const todayLabel = dayjs().format("ddd, MMM D");
+  const todayDateKey = getUtcDateKey();
 
   const todayQuery = useQuery({
-    queryKey: queryKeys.trackedToday,
+    queryKey: queryKeys.trackedToday(todayDateKey),
     queryFn: learningService.getTodayAssignments,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const dueQuery = useQuery({
-    queryKey: queryKeys.trackedDue,
+    queryKey: queryKeys.trackedDue(todayDateKey),
     queryFn: learningService.getDueAssignments,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const schedulesQuery = useQuery({
@@ -64,10 +71,17 @@ export function TodayPage() {
   const totalToday = assignments.length;
   const progressPct = totalToday > 0 ? Math.round((solved.length / totalToday) * 100) : 0;
 
-  const potdPending = pending.filter((a) => a.scheduleType === "DAILY_POTD");
+  const potdToday = useMemo(
+    () =>
+      assignments.filter(
+        (a) => a.scheduleType === "DAILY_POTD" && a.assignedDate === todayDateKey,
+      ),
+    [assignments, todayDateKey],
+  );
+  const potdPending = potdToday.filter((a) => a.status === "PENDING");
+  const potdHeroAssignment = potdPending[0] ?? potdToday[0];
   const planPending = pending.filter((a) => a.scheduleType !== "DAILY_POTD");
   const planPendingBySchedule = useMemo(() => groupBySchedule(planPending), [planPending]);
-  const dueBySchedule = useMemo(() => groupBySchedule(due), [due]);
 
   const potdEnrolled =
     schedulesQuery.data?.some((s) => s.active && s.template.type === "DAILY_POTD") ?? false;
@@ -100,9 +114,9 @@ export function TodayPage() {
           <LoadingSkeleton variant="detail" />
         ) : (
           <>
-            {potdPending[0] !== undefined ? (
+            {potdHeroAssignment !== undefined ? (
               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-                <TodayPotdHero assignment={potdPending[0]} />
+                <TodayPotdHero assignment={potdHeroAssignment} />
               </motion.div>
             ) : (
               <TodayPotdEnrollBanner enrolled={potdEnrolled} />
@@ -214,26 +228,16 @@ export function TodayPage() {
                     {due.length}
                   </Typography>
                 }
-                sx={{ borderLeft: "3px solid #EF4444" }}
-                bodySx={{ ...sectionContentSx, py: 0.75 }}
+                sx={{
+                  borderLeft: "3px solid #EF4444",
+                  maxHeight: { lg: 480 },
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                }}
+                bodySx={{ ...sectionContentSx, py: 0.75, minHeight: 0, flex: 1, display: "flex", flexDirection: "column" }}
               >
-                {dueQuery.isLoading ? (
-                  <LoadingSkeleton variant="list" count={3} />
-                ) : due.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
-                    No overdue problems.
-                  </Typography>
-                ) : (
-                  dueBySchedule.map((group) => (
-                    <ScheduleAssignmentGroup
-                      key={`due-${group.scheduleName}`}
-                      scheduleName={group.scheduleName}
-                      scheduleType={group.scheduleType}
-                      assignments={group.items}
-                      variant="overdue"
-                    />
-                  ))
-                )}
+                <OverduePaginatedPanel assignments={due} isLoading={dueQuery.isLoading} />
               </SectionCard>
             </Box>
           </>

@@ -5,6 +5,7 @@ import {
   SubmissionStatus,
 } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
+import { findTodayDailyPotdSlot } from "../leetcode/dailyPotd.service.js";
 import { mapProblemRowToDetailResponse } from "../leetcode/leetcode.mapper.js";
 import { getTodayAssignmentsForUser } from "./assignments.service.js";
 import { startOfUtcDay } from "./studyPlanAssignment.js";
@@ -127,10 +128,54 @@ export async function reconcileSolvedAssignments(userId: string): Promise<void> 
   );
 }
 
+/**
+ * Remove today's POTD assignment rows that no longer match the official calendar slot
+ * (e.g. yesterday's problem synced under today's date before the correct row existed).
+ */
+async function pruneStaleTodayPotdAssignments(
+  userId: string,
+  assignedDate: Date,
+  delivered: DeliveredProblem[],
+): Promise<void> {
+  const potdSchedules = await prisma.userSchedule.findMany({
+    where: { userId, active: true, template: { type: ScheduleType.DAILY_POTD } },
+    select: { id: true },
+  });
+  if (potdSchedules.length === 0) return;
+
+  const allowedBySchedule = new Map<string, Set<string>>();
+  for (const item of delivered) {
+    const allowed = allowedBySchedule.get(item.userScheduleId) ?? new Set<string>();
+    allowed.add(item.problemId);
+    allowedBySchedule.set(item.userScheduleId, allowed);
+  }
+
+  await Promise.all(
+    potdSchedules.map(async (schedule) => {
+      const allowed = allowedBySchedule.get(schedule.id);
+      if (allowed === undefined || allowed.size === 0) {
+        await prisma.assignment.deleteMany({
+          where: { userId, userScheduleId: schedule.id, assignedDate },
+        });
+        return;
+      }
+      await prisma.assignment.deleteMany({
+        where: {
+          userId,
+          userScheduleId: schedule.id,
+          assignedDate,
+          problemId: { notIn: [...allowed] },
+        },
+      });
+    }),
+  );
+}
+
 /** Upsert today's assignment rows; idempotent via unique constraint. */
 export async function syncTodayAssignments(userId: string): Promise<void> {
   const assignedDate = todayUtc();
   const delivered = await collectDeliveredToday(userId);
+  await pruneStaleTodayPotdAssignments(userId, assignedDate, delivered);
   if (delivered.length === 0) return;
 
   const problemIds = [...new Set(delivered.map((d) => d.problemId))];
@@ -257,9 +302,18 @@ export async function getTrackedTodayAssignments(userId: string): Promise<{
     orderBy: [{ status: "asc" }, { createdAt: "asc" }],
   });
 
-  const problemIds = [...new Set(rows.map((r) => r.problemId))];
+  const potdSlot = await findTodayDailyPotdSlot();
+  const potdProblemId = potdSlot?.problemId ?? null;
+  const filteredRows = rows.filter((row) => {
+    if (row.userSchedule.template.type !== ScheduleType.DAILY_POTD) {
+      return true;
+    }
+    return potdProblemId !== null && row.problemId === potdProblemId;
+  });
+
+  const problemIds = [...new Set(filteredRows.map((r) => r.problemId))];
   const submissionCounts = await submissionCountsByProblem(userId, problemIds);
-  const assignments = rows.map((r) => mapAssignmentRow(r, submissionCounts));
+  const assignments = filteredRows.map((r) => mapAssignmentRow(r, submissionCounts));
   const stats = await getLearningStats(userId);
 
   return { assignments, stats };

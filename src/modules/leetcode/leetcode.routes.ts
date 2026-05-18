@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { validateBody, validateParams } from "../../middleware/validate.middleware.js";
+import { validateBody, validateParams, validateQuery } from "../../middleware/validate.middleware.js";
+import { catalogMetaQuerySchema, listProblemsQuerySchema } from "./leetcode.catalog.validation.js";
 import { optionalAuth } from "../../middleware/optionalAuth.middleware.js";
 import { requireAuth } from "../../middleware/auth.middleware.js";
 import { problemSlugParamsSchema } from "./leetcode.validation.js";
@@ -12,6 +13,24 @@ export const leetcodeRouter = Router();
 leetcodeRouter.get("/", asyncHandler(leetcodeController.getDailyProblem));
 
 export const problemsRouter = Router();
+
+problemsRouter.get(
+  "/stats",
+  validateQuery(catalogMetaQuerySchema),
+  asyncHandler(leetcodeController.getCatalogStats),
+);
+
+problemsRouter.get(
+  "/topics",
+  validateQuery(catalogMetaQuerySchema),
+  asyncHandler(leetcodeController.listProblemTopics),
+);
+
+problemsRouter.get(
+  "/",
+  validateQuery(listProblemsQuerySchema),
+  asyncHandler(leetcodeController.listProblems),
+);
 
 problemsRouter.get(
   "/:slug/judge-meta",
