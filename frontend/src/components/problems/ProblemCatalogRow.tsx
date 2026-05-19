@@ -4,6 +4,7 @@ import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import LockRoundedIcon from "@mui/icons-material/LockRounded";
 import { Link as RouterLink } from "react-router-dom";
 import type { ProblemCatalogItem } from "@/types/api.types";
+import { ProblemSolvedIndicator } from "@/components/problems/ProblemSolvedIndicator";
 import { DifficultyChip } from "@/components/ui/DifficultyChip";
 import { difficultyColor } from "@/utils/difficulty";
 import { miui } from "@/theme/theme";
@@ -20,23 +21,21 @@ type ProblemCatalogRowProps = {
 export const ProblemCatalogRow = memo(function ProblemCatalogRow({
   row,
   compact,
-  index,
+  index: _index,
   gridColumns,
 }: ProblemCatalogRowProps) {
   const accent = difficultyColor(row.difficulty);
-  const shaded = index % 2 === 1;
-  const rowBg = shaded ? alpha(miui.text, 0.035) : miui.paper;
-
   return (
     <Box
       sx={{
         borderBottom: `1px solid ${miui.border}`,
-        bgcolor: rowBg,
+        bgcolor: "transparent",
       }}
     >
       <Box
         component={RouterLink}
         to={`/problems/${row.slug}`}
+        className="problem-row"
         sx={{
           display: "grid",
           gridTemplateColumns: gridColumns,
@@ -48,9 +47,9 @@ export const ProblemCatalogRow = memo(function ProblemCatalogRow({
           textDecoration: "none",
           color: "inherit",
           position: "relative",
-          bgcolor: rowBg,
+          bgcolor: "transparent",
           "&:hover": {
-            bgcolor: alpha(miui.primary, 0.07),
+            bgcolor: miui.hover,
             "& .catalog-chevron": { opacity: 1, transform: "translateX(2px)" },
             "& .catalog-title": { color: "primary.main" },
           },
@@ -80,6 +79,8 @@ export const ProblemCatalogRow = memo(function ProblemCatalogRow({
         >
           {row.leetcodeId}
         </Typography>
+
+        <ProblemSolvedIndicator solved={row.solved} />
 
         <Box sx={{ minWidth: 0 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
@@ -153,6 +154,6 @@ export const ProblemCatalogRow = memo(function ProblemCatalogRow({
 
 export function gridColumns(compact: boolean): string {
   return compact
-    ? "52px minmax(0, 1fr) 96px 20px"
-    : "52px minmax(0, 1fr) 108px minmax(120px, 1.2fr) 20px";
+    ? "52px 22px minmax(0, 1fr) 96px 20px"
+    : "52px 22px minmax(0, 1fr) 108px minmax(120px, 1.2fr) 20px";
 }

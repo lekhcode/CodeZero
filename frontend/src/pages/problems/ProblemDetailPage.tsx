@@ -3,6 +3,7 @@ import { Alert, Box, Chip, Stack, Typography } from "@mui/material";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
+import { AutoRevisionReturnMarker } from "@/components/smartRevisions/AutoRevisionReturnMarker";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { DifficultyChip } from "@/components/ui/DifficultyChip";
@@ -103,6 +104,8 @@ export function ProblemDetailPage() {
     judgeQuery.isError === true ? (judgeQuery.error as Error).message : null;
 
   return (
+    <>
+      <AutoRevisionReturnMarker />
     <PageContainer
       sx={{
         maxWidth: "none",
@@ -156,5 +159,6 @@ export function ProblemDetailPage() {
         </Box>
       )}
     </PageContainer>
+    </>
   );
 }

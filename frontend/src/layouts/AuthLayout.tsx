@@ -1,8 +1,8 @@
-import { Box, Container, alpha } from "@mui/material";
+import { Box, Container } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CodeZeroBrandLink } from "@/components/brand/CodeZeroBrandLink";
-import { glassSx } from "@/theme/theme";
+import { glassSx, miui } from "@/theme/theme";
 
 export function AuthLayout() {
   return (
@@ -14,25 +14,23 @@ export function AuthLayout() {
         justifyContent: "center",
         px: 2,
         py: 4,
+        bgcolor: miui.bg,
       }}
     >
-      <Container maxWidth="sm">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <Container maxWidth="xs" disableGutters sx={{ maxWidth: 420 }}>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
             <CodeZeroBrandLink size={44} />
           </Box>
         </motion.div>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.1 }}
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.05, duration: 0.2 }}>
           <Box
             sx={{
               ...glassSx,
               borderRadius: 4,
-              p: { xs: 3, sm: 4 },
-              bgcolor: alpha("#fff", 0.9),
+              p: 5,
+              maxWidth: 420,
+              mx: "auto",
             }}
           >
             <Outlet />

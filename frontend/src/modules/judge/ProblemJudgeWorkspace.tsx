@@ -49,6 +49,7 @@ import { useAuthStore } from "@/store/authStore";
 import { learningProgressKeyPrefixes, queryKeys } from "@/hooks/queryKeys";
 import { useJudgeCodingTimer, formatSolveDuration } from "@/hooks/useJudgeCodingTimer";
 import { formatJudgeEditor } from "@/utils/formatJudgeEditor";
+import { handleSolveButtonMouseMove } from "@/utils/solveButtonRipple";
 import dayjs from "dayjs";
 import type { editor } from "monaco-editor";
 
@@ -1300,8 +1301,10 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
               <Button
                 size="small"
                 variant="contained"
+                className="solve-btn btn-primary"
                 disabled={locked || busy || language === null || !isAuthenticated}
                 onClick={() => void startJudge("submit")}
+                onMouseMove={handleSolveButtonMouseMove}
                 sx={{ textTransform: "none", fontWeight: 800, bgcolor: "#238636", "&:hover": { bgcolor: "#2ea043" } }}
               >
                 Submit

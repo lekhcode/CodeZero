@@ -68,7 +68,7 @@ export function AnimatedBanner({
           background: `linear-gradient(
             105deg,
             transparent 38%,
-            ${alpha("#fff", subtle ? 0.08 : 0.14)} 50%,
+            ${alpha(miui.text, subtle ? 0.04 : 0.08)} 50%,
             transparent 62%
           )`,
           pointerEvents: "none",

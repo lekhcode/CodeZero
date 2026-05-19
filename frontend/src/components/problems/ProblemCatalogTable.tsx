@@ -19,7 +19,7 @@ const headerSx = {
   gap: 1.5,
   px: 2,
   py: 1.25,
-  bgcolor: alpha(miui.bg, 0.85),
+  bgcolor: miui.elevated,
   borderBottom: `1px solid ${miui.border}`,
   position: "sticky" as const,
   top: 0,

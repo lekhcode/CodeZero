@@ -1,7 +1,11 @@
 import { Router } from "express";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { validateBody } from "../../middleware/validate.middleware.js";
-import { loginBodySchema, registerBodySchema } from "./auth.validation.js";
+import {
+  googleAuthBodySchema,
+  loginBodySchema,
+  registerBodySchema,
+} from "./auth.validation.js";
 import * as authController from "./auth.controller.js";
 
 /**
@@ -17,3 +21,11 @@ authRouter.post(
 );
 
 authRouter.post("/login", validateBody(loginBodySchema), asyncHandler(authController.login));
+
+authRouter.post(
+  "/google",
+  validateBody(googleAuthBodySchema),
+  asyncHandler(authController.googleAuth),
+);
+
+authRouter.get("/github/callback", asyncHandler(authController.githubCallback));

@@ -1,12 +1,8 @@
 import type { ReactNode } from "react";
-import { Alert, Box, Button, Grid, LinearProgress, Stack, Typography, alpha } from "@mui/material";
+import { Alert, Box, Button, Grid, LinearProgress, Stack, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { Link as RouterLink } from "react-router-dom";
 import { motion } from "framer-motion";
-import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedInRounded";
-import PendingActionsRoundedIcon from "@mui/icons-material/PendingActionsRounded";
-import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
-import CodeRoundedIcon from "@mui/icons-material/CodeRounded";
 import MenuBookRoundedIcon from "@mui/icons-material/MenuBookRounded";
 import TodayRoundedIcon from "@mui/icons-material/TodayRounded";
 import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
@@ -28,7 +24,10 @@ import { queryKeys } from "@/hooks/queryKeys";
 import { ProblemCatalogInfiniteList } from "@/components/problems/ProblemCatalogInfiniteList";
 import { useAuthStore } from "@/store/authStore";
 import { AnimatedBanner } from "@/components/ui/AnimatedBanner";
-import { labAccentGradient, miui, miuiCardSx, sectionContentSx } from "@/theme/theme";
+import { WeekBelt } from "@/components/dashboard/WeekBelt";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { FadeInCard } from "@/components/ui/FadeInCard";
+import { dashNavTabSx, miui, miuiCardSx, monoStatSx, sectionContentSx } from "@/theme/theme";
 import dayjs from "dayjs";
 
 const stagger = {
@@ -47,52 +46,62 @@ const fadeUp = {
 function LiveStat({
   label,
   value,
-  icon,
   accent,
+  pulse,
+  valueTo,
+  delay = 0,
 }: {
   label: string;
   value: number;
-  icon: ReactNode;
   accent: string;
+  pulse?: boolean;
+  valueTo?: string;
+  delay?: number;
 }) {
+  const valueNode = (
+    <Typography
+      component={valueTo !== undefined ? RouterLink : "span"}
+      to={valueTo}
+      sx={{
+        ...monoStatSx,
+        fontSize: "2rem",
+        fontWeight: 700,
+        lineHeight: 1,
+        color: accent,
+        textDecoration: "none",
+        display: "inline-block",
+        ...(valueTo !== undefined
+          ? {
+              cursor: "pointer",
+              "&:hover": { filter: "brightness(1.1)" },
+            }
+          : {}),
+      }}
+    >
+      <AnimatedNumber value={value} />
+    </Typography>
+  );
+
   return (
-    <motion.div variants={fadeUp}>
+    <FadeInCard delay={delay} className="card miui-card" borderRadius={3}>
       <Box
+        className={pulse && value > 0 ? "overdue-active" : undefined}
         sx={{
           ...miuiCardSx,
-          p: 1.5,
-          borderRadius: 2.5,
-          display: "flex",
-          alignItems: "center",
-          gap: 1.25,
+          p: 2,
+          borderRadius: 3,
           height: "100%",
           minWidth: 0,
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <Box
-          sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 2,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            bgcolor: alpha(accent, 0.12),
-            color: accent,
-          }}
-        >
-          {icon}
-        </Box>
-        <Box>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            {label}
-          </Typography>
-          <Typography variant="h5" sx={{ fontWeight: 800, lineHeight: 1.1, color: accent }}>
-            {value}
-          </Typography>
-        </Box>
+        <Typography variant="caption" sx={{ display: "block", mb: 0.75 }}>
+          {label}
+        </Typography>
+        {valueNode}
       </Box>
-    </motion.div>
+    </FadeInCard>
   );
 }
 
@@ -153,21 +162,27 @@ export function DashboardPage() {
       <motion.div variants={stagger} initial="hidden" animate="show">
         <motion.div variants={fadeUp}>
           <AnimatedBanner
+            subtle
             sx={{
               mb: 2,
               p: 2,
               borderRadius: 3,
-              background: `linear-gradient(120deg, ${alpha(miui.primary, 0.12)} 0%, ${alpha(miui.accent, 0.06)} 40%, ${miui.paper} 100%)`,
+              bgcolor: miui.paper,
               border: `1px solid ${miui.border}`,
+              borderLeft: `3px solid ${miui.accent}`,
               boxSizing: "border-box",
+              boxShadow: "none",
             }}
           >
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 8 }}>
-                <Typography variant="overline" sx={{ color: "primary.main", fontWeight: 700 }}>
+                <Typography variant="overline" sx={{ color: "text.disabled", display: "block" }}>
                   {todayLabel}
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: "-0.03em", mt: 0.25 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: "1.625rem", mt: 0.25 }}
+                >
                   Hi {firstName}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 480 }}>
@@ -177,42 +192,36 @@ export function DashboardPage() {
                 <LinearProgress
                   variant="determinate"
                   value={progressPct}
-                  sx={{
-                    mt: 1.5,
-                    height: 6,
-                    borderRadius: 3,
-                    bgcolor: alpha(miui.primary, 0.1),
-                    "& .MuiLinearProgress-bar": {
-                      borderRadius: 3,
-                      background: labAccentGradient,
-                    },
-                  }}
+                  sx={{ mt: 1.5, height: 4, borderRadius: 2, bgcolor: miui.elevated }}
                 />
-                <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: "wrap" }}>
+                <Stack direction="row" spacing={0.5} sx={{ mt: 1.5, flexWrap: "wrap", borderBottom: `1px solid ${miui.border}` }}>
                   <Button
                     component={RouterLink}
                     to="/today"
-                    variant="contained"
+                    variant="text"
                     size="small"
                     startIcon={<TodayRoundedIcon />}
+                    sx={dashNavTabSx(true)}
                   >
                     Today
                   </Button>
                   <Button
                     component={RouterLink}
                     to="/lab"
-                    variant="outlined"
+                    variant="text"
                     size="small"
                     startIcon={<MenuBookRoundedIcon />}
+                    sx={dashNavTabSx(false)}
                   >
                     Problems
                   </Button>
                   <Button
                     component={RouterLink}
                     to="/submissions"
-                    variant="outlined"
+                    variant="text"
                     size="small"
                     startIcon={<HistoryRoundedIcon />}
+                    sx={dashNavTabSx(false)}
                   >
                     Submissions
                   </Button>
@@ -241,36 +250,23 @@ export function DashboardPage() {
           <>
             <Grid container spacing={1.5} sx={{ mb: 2 }}>
               <Grid size={{ xs: 6, md: 3 }}>
-                <LiveStat
-                  label="Solved today"
-                  value={stats?.solvedToday ?? 0}
-                  icon={<AssignmentTurnedInRoundedIcon fontSize="small" />}
-                  accent="#22C55E"
-                />
+                <LiveStat label="Solved today" value={stats?.solvedToday ?? 0} accent={miui.success} delay={0} />
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
-                <LiveStat
-                  label="Pending"
-                  value={stats?.pendingToday ?? 0}
-                  icon={<PendingActionsRoundedIcon fontSize="small" />}
-                  accent={miui.accent}
-                />
+                <LiveStat label="Pending" value={stats?.pendingToday ?? 0} accent={miui.accent} delay={0.06} />
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
                 <LiveStat
                   label="Overdue"
                   value={stats?.dueCount ?? 0}
-                  icon={<WarningAmberRoundedIcon fontSize="small" />}
-                  accent="#EF4444"
+                  accent={miui.danger}
+                  pulse
+                  valueTo="/today?tab=timeline"
+                  delay={0.12}
                 />
               </Grid>
               <Grid size={{ xs: 6, md: 3 }}>
-                <LiveStat
-                  label="Accepted"
-                  value={stats?.totalAccepted ?? 0}
-                  icon={<CodeRoundedIcon fontSize="small" />}
-                  accent={miui.primary}
-                />
+                <LiveStat label="Accepted" value={stats?.totalAccepted ?? 0} accent={miui.accent} delay={0.18} />
               </Grid>
             </Grid>
 
@@ -279,6 +275,10 @@ export function DashboardPage() {
                 {todayQuery.error?.message ?? dueQuery.error?.message}
               </Alert>
             )}
+
+            <motion.div variants={fadeUp}>
+              <WeekBelt />
+            </motion.div>
 
             <motion.div variants={fadeUp}>
               <Box sx={{ mb: 2 }}>
@@ -337,7 +337,7 @@ export function DashboardPage() {
                   >
                     {dueAssignments.length === 0 ? (
                       <Typography variant="body2" color="text.secondary" sx={{ ...sectionContentSx, py: 2 }}>
-                        All caught up.
+                        Backlog clear. Discipline is showing.
                       </Typography>
                     ) : (
                       dueAssignments.slice(0, 4).map((a, i) => (
@@ -358,7 +358,7 @@ export function DashboardPage() {
                       actionLabel="Open"
                       actionTo="/brain-cache"
                       count={brainDueToday.length + brainOverdue.length}
-                      sx={{ mt: 2, borderLeft: "3px solid #8b5cf6" }}
+                      sx={{ mt: 2, borderLeft: `3px solid ${miui.accent}` }}
                     >
                       {brainDueToday.slice(0, 2).map((t, i) => (
                         <BrainCacheCompactRevisionRow
@@ -390,15 +390,16 @@ export function DashboardPage() {
                       <LoadingSkeleton variant="list" count={4} />
                     ) : recentSubmissions.length === 0 ? (
                       <Typography variant="body2" color="text.secondary" sx={{ ...sectionContentSx, py: 2 }}>
-                        No runs yet.
+                        No submissions yet. First rep is the hardest.
                       </Typography>
                     ) : (
                       recentSubmissions.map((s, i) => (
-                        <SubmissionHistoryRow
-                          key={s.id}
-                          submission={s}
-                          isLast={i === recentSubmissions.length - 1}
-                        />
+                        <FadeInCard key={s.id} delay={Math.min(i * 0.04, 0.32)}>
+                          <SubmissionHistoryRow
+                            submission={s}
+                            isLast={i === recentSubmissions.length - 1}
+                          />
+                        </FadeInCard>
                       ))
                     )}
                   </Panel>

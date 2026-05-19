@@ -1,12 +1,11 @@
 import {
   Alert,
   Box,
-  Chip,
+  Button,
   IconButton,
   Stack,
   Switch,
   Typography,
-  alpha,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
@@ -16,8 +15,22 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { schedulesService } from "@/services/schedules.service";
 import { queryKeys, trackedDuePrefix, trackedTodayPrefix } from "@/hooks/queryKeys";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
-import { Button } from "@mui/material";
-import { glassSx } from "@/theme/theme";
+import { miui } from "@/theme/theme";
+
+const metaBadgeSx = {
+  fontFamily: '"JetBrains Mono", monospace',
+  fontSize: "11px",
+  fontWeight: 400,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.04em",
+  bgcolor: miui.elevated,
+  border: `1px solid ${miui.border}`,
+  color: miui.textMuted,
+  borderRadius: "4px",
+  px: 1,
+  py: 0.25,
+  lineHeight: 1.4,
+};
 
 export function UserSchedulesPage() {
   const navigate = useNavigate();
@@ -49,15 +62,20 @@ export function UserSchedulesPage() {
   });
 
   return (
-    <PageContainer>
+    <PageContainer sx={{ bgcolor: miui.bg, maxWidth: 900 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 4, gap: 2, flexWrap: "wrap" }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 800 }}>
+          <Typography
+            variant="h4"
+            sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: "28px", color: miui.text }}
+          >
             My schedules
           </Typography>
-          <Typography color="text.secondary">Toggle, remove, or add learning streams</Typography>
+          <Typography sx={{ color: miui.textMuted, fontWeight: 400, fontSize: "14px" }}>
+            Toggle, remove, or add learning streams
+          </Typography>
         </Box>
-        <Button component={RouterLink} to="/templates" variant="contained">
+        <Button component={RouterLink} to="/templates" variant="contained" sx={{ fontWeight: 500 }}>
           Add schedule
         </Button>
       </Box>
@@ -79,46 +97,74 @@ export function UserSchedulesPage() {
           <Box
             key={schedule.id}
             sx={{
-              ...glassSx,
-              borderRadius: 2,
-              p: 2,
+              borderRadius: "12px",
+              p: "16px 20px",
               display: "flex",
               alignItems: "center",
               gap: 2,
               flexWrap: "wrap",
               opacity: schedule.active ? 1 : 0.75,
-              bgcolor: schedule.active ? alpha("#fff", 0.85) : alpha("#f1f5f9", 0.9),
+              bgcolor: miui.paper,
+              border: `1px solid ${miui.border}`,
+              transition: "border-color 150ms ease",
+              "&:hover": { borderColor: miui.borderStrong },
             }}
           >
             <Box sx={{ flex: 1, minWidth: 200 }}>
-              <Typography sx={{ fontWeight: 700 }}>{schedule.template.name}</Typography>
-              <Stack direction="row" spacing={1} sx={{ mt: 0.5, flexWrap: "wrap" }}>
-                <Chip label={schedule.template.type.replace("_", " ")} size="small" />
+              <Typography
+                sx={{
+                  fontFamily: '"Space Grotesk", sans-serif',
+                  fontWeight: 600,
+                  fontSize: "15px",
+                  color: miui.text,
+                }}
+              >
+                {schedule.template.name}
+              </Typography>
+              <Stack direction="row" spacing={0.75} sx={{ mt: 0.75, flexWrap: "wrap" }}>
+                <Box component="span" sx={metaBadgeSx}>
+                  {schedule.template.type.replace("_", " ")}
+                </Box>
                 {schedule.dailyQuestions != null && (
-                  <Chip label={`${schedule.dailyQuestions}/day`} size="small" variant="outlined" />
+                  <Box component="span" sx={{ ...metaBadgeSx, color: miui.primary }}>
+                    {schedule.dailyQuestions}/day
+                  </Box>
                 )}
                 {schedule.difficulty && (
-                  <Chip label={schedule.difficulty} size="small" variant="outlined" />
+                  <Box component="span" sx={metaBadgeSx}>
+                    {schedule.difficulty}
+                  </Box>
                 )}
               </Stack>
             </Box>
             <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: miui.textMuted, fontWeight: 400, fontSize: "13px" }}>
                 Active
               </Typography>
               <Switch
                 checked={schedule.active}
                 onChange={() => toggleMutation.mutate(schedule.id)}
                 disabled={toggleMutation.isPending}
+                sx={{
+                  "& .MuiSwitch-switchBase.Mui-checked": {
+                    color: miui.primary,
+                    "& + .MuiSwitch-track": { bgcolor: miui.primary, opacity: 0.45 },
+                  },
+                  "& .MuiSwitch-track": { bgcolor: miui.elevated, opacity: 1 },
+                }}
               />
               <IconButton
-                color="error"
                 onClick={() => {
                   if (window.confirm(`Remove ${schedule.template.name}?`)) {
                     deleteMutation.mutate(schedule.id);
                   }
                 }}
                 aria-label="Delete schedule"
+                sx={{
+                  color: miui.textMuted,
+                  transition: "color 150ms ease",
+                  "&:hover": { color: miui.danger, bgcolor: "transparent" },
+                }}
               >
                 <DeleteOutlineRoundedIcon />
               </IconButton>

@@ -4,6 +4,7 @@ import { queryClient } from "@/lib/queryClient";
 import { theme } from "@/theme/theme";
 import { AppRouter } from "@/routes/AppRouter";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AmbientBackground } from "@/components/ui/AmbientBackground";
 
 /**
  * Root app shell — providers only; routing lives in AppRouter for testability.
@@ -14,6 +15,7 @@ export default function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <ErrorBoundary>
+          <AmbientBackground />
           <AppRouter />
         </ErrorBoundary>
       </ThemeProvider>

@@ -73,8 +73,8 @@ export function ProblemTopicTagBar({
               whileHover={{ scale: 1.03 }}
               whileTap={tapPress}
               animate={{
-                backgroundColor: active ? alpha(miui.primary, 0.1) : alpha(miui.text, 0.05),
-                borderColor: active ? alpha(miui.primary, 0.35) : "transparent",
+                backgroundColor: active ? miui.accentDim : miui.elevated,
+                borderColor: active ? miui.primary : miui.border,
               }}
               transition={springSnappy}
               style={{
@@ -83,25 +83,27 @@ export function ProblemTopicTagBar({
                 gap: 6,
                 flexShrink: 0,
                 border: "1px solid",
-                borderRadius: 10,
+                borderRadius: 6,
                 cursor: "pointer",
                 padding: "6px 10px",
                 margin: 0,
-                color: active ? miui.primary : miui.text,
-                fontWeight: active ? 700 : 500,
-                fontSize: "0.8125rem",
+                color: active ? miui.primary : miui.textMuted,
+                fontWeight: active ? 600 : 500,
+                fontSize: "0.6875rem",
+                fontFamily: '"JetBrains Mono", monospace',
               }}
             >
               <span style={{ whiteSpace: "nowrap" }}>{tag.name}</span>
               <span
                 style={{
                   padding: "2px 6px",
-                  borderRadius: 6,
-                  fontSize: "0.7rem",
-                  fontWeight: 700,
+                  borderRadius: 4,
+                  fontSize: "0.6875rem",
+                  fontWeight: 500,
                   fontVariantNumeric: "tabular-nums",
-                  background: active ? alpha(miui.primary, 0.15) : alpha(miui.text, 0.08),
-                  color: active ? miui.primary : miui.textMuted,
+                  fontFamily: '"JetBrains Mono", monospace',
+                  background: miui.bg,
+                  color: miui.textMuted,
                 }}
               >
                 {tag.count.toLocaleString()}

@@ -28,6 +28,7 @@ export function SectionCard({
 
   return (
     <Box
+      className="card"
       sx={{
         ...sectionCardSx,
         display: "flex",

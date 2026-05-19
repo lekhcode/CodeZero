@@ -59,7 +59,7 @@ export function CodeZeroLogo({ size = 36, compact = false, sx }: CodeZeroLogoPro
           ml: compact ? 0 : -0.15,
           borderRadius: 2,
           bgcolor: miui.primary,
-          boxShadow: `0 2px 10px ${alpha(miui.primary, 0.28)}`,
+          boxShadow: `0 0 16px ${alpha(miui.primary, 0.45)}, 0 0 32px ${alpha(miui.primary, 0.15)}`,
         }}
       >
         <CodeZeroMark size={markSize * 0.88} />

@@ -240,8 +240,8 @@ export function SubmissionRunsPanel({
           <Alert severity="error">{error.message}</Alert>
         ) : submissions.length === 0 ? (
           <EmptyState
-            title="No submissions"
-            description="Change filters or solve a problem in the Lab."
+            title="No submissions yet"
+            description="First rep is the hardest."
           />
         ) : (
           <SubmissionRunsTable submissions={submissions} />

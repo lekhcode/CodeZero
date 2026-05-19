@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Box, Typography, alpha } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { springSnappy, tapPress, transitionFast } from "@/theme/motion";
 import { miui } from "@/theme/theme";
@@ -71,12 +71,12 @@ export function RadialStatRing({
           borderRadius: compact ? 2 : 3,
           p: compact ? 0.75 : 1.5,
           pt: compact ? 0.65 : 1.25,
-          bgcolor: miui.paper,
-          border: `1px solid ${active ? alpha(color, 0.45) : miui.border}`,
-          boxShadow: active
-            ? `0 8px 20px ${alpha(color, 0.16)}`
-            : `0 1px 4px ${alpha(miui.text, 0.05)}`,
-          transition: "border-color 0.18s ease, box-shadow 0.18s ease",
+          border: `1px solid ${active ? miui.primary : miui.border}`,
+          bgcolor: active ? miui.accentDim : miui.paper,
+          transition: "border-color 200ms ease, transform 200ms ease",
+          "@media (prefers-reduced-motion: no-preference)": {
+            "&:hover": { borderColor: miui.borderStrong, transform: "translateY(-2px)" },
+          },
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -113,7 +113,7 @@ export function RadialStatRing({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={alpha(miui.text, 0.08)}
+              stroke={miui.elevated}
               strokeWidth={stroke}
             />
             <motion.circle
@@ -148,12 +148,12 @@ export function RadialStatRing({
             >
               <Typography
                 sx={{
-                  fontWeight: 800,
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontWeight: 700,
                   lineHeight: 1,
                   fontSize: compact ? "0.95rem" : "1.25rem",
                   color: active ? color : "text.primary",
                   fontVariantNumeric: "tabular-nums",
-                  letterSpacing: "-0.02em",
                 }}
               >
                 {display}

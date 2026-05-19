@@ -76,11 +76,22 @@ model UserSchedule {
   @@map("user_schedules")
 }
 
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  GITHUB
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
-  /** bcrypt hash — never returned from APIs; load only in auth flows that need verification */
-  password  String
+  name      String?
+  avatar    String?
+  provider  AuthProvider @default(EMAIL)
+  googleId  String?  @unique
+  githubId  String?  @unique
+  /** bcrypt hash — null for OAuth-only accounts */
+  password  String?
   /**
    * Last issued access JWT (single session). `requireAuth` checks Bearer token === this value.
    */
@@ -94,6 +105,7 @@ model User {
   assignments          Assignment[]
   brainCachePlaylists  BrainCachePlaylist[]
   brainCacheRevisionTasks BrainCacheRevisionTask[]
+  autoRevisions        AutoRevision[]
 
   @@map("users")
 }
@@ -268,6 +280,7 @@ model Problem {
   assignments        Assignment[]
   brainCacheEntries  BrainCachePlaylistProblem[]
   brainCacheTasks    BrainCacheRevisionTask[]
+  autoRevisions      AutoRevision[]
 
   @@map("problems")
 }
@@ -348,6 +361,41 @@ model BrainCacheRevisionTask {
   @@index([dueDate])
   @@index([status])
   @@map("brain_cache_revision_tasks")
+}
+
+// ---------------------------------------------------------------------------
+// Smart Auto-Revision (separate from manual Brain Cache playlists).
+// ---------------------------------------------------------------------------
+
+enum AutoRevisionType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model AutoRevision {
+  id            String           @id @default(uuid()) @db.Uuid
+  userId        String           @db.Uuid
+  problemId     String           @db.Uuid
+  problemTitle  String
+  difficulty    DifficultyLevel
+  solvedAt      DateTime
+  revisionType  AutoRevisionType
+  scheduledFor  DateTime         @db.Date
+  isRevised     Boolean          @default(false)
+  revisedAt     DateTime?
+  /** IANA timezone used when computing scheduledFor (e.g. America/New_York). */
+  scheduleTimezone String        @default("UTC")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, problemId, revisionType])
+  @@index([userId, scheduledFor])
+  @@index([userId, isRevised, scheduledFor])
+  @@map("auto_revisions")
 }
 
 /** Per-language starter body; user never writes main() — harness is generated. */

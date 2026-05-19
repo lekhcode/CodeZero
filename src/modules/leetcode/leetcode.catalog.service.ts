@@ -1,6 +1,12 @@
 import { DifficultyLevel, type Prisma } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
 import type { ListProblemsQuery } from "./leetcode.catalog.validation.js";
+import {
+  expandTokenVariants,
+  matchesFlexibleProblemSearch,
+  scoreFlexibleProblemSearch,
+  tokenizeSearchQuery,
+} from "./problemSearch.utils.js";
 
 export type ProblemCatalogItem = {
   id: string;
@@ -11,6 +17,7 @@ export type ProblemCatalogItem = {
   topics: string[];
   isPremium: boolean;
   hasDetail: boolean;
+  solved: boolean;
 };
 
 export type ProblemCatalogPage = {
@@ -19,6 +26,8 @@ export type ProblemCatalogPage = {
   limit: number;
   total: number;
   totalPages: number;
+  /** Problems matching current filters that the user has solved (when authenticated). */
+  solvedCount?: number;
 };
 
 function buildWhere(query: ListProblemsQuery): Prisma.ProblemWhereInput {
@@ -36,17 +45,117 @@ function buildWhere(query: ListProblemsQuery): Prisma.ProblemWhereInput {
     and.push({ topics: { hasEvery: query.topics } });
   }
 
-  if (query.search !== undefined && query.search.length > 0) {
-    const term = query.search;
-    and.push({
-      OR: [
-        { title: { contains: term, mode: "insensitive" } },
-        { slug: { contains: term, mode: "insensitive" } },
-      ],
-    });
+  return and.length > 0 ? { AND: and } : {};
+}
+
+/** Broad DB pre-filter so flexible in-memory match has a candidate set. */
+function buildSearchPrefetchWhere(
+  baseWhere: Prisma.ProblemWhereInput,
+  search: string,
+): Prisma.ProblemWhereInput {
+  const tokens = tokenizeSearchQuery(search);
+  const or: Prisma.ProblemWhereInput[] = [
+    { title: { contains: search.trim(), mode: "insensitive" } },
+    { slug: { contains: search.trim(), mode: "insensitive" } },
+  ];
+
+  for (const token of tokens) {
+    for (const variant of expandTokenVariants(token)) {
+      if (variant.length >= 1) {
+        or.push({ title: { contains: variant, mode: "insensitive" } });
+        or.push({ slug: { contains: variant, mode: "insensitive" } });
+      }
+      const asNum = Number(variant);
+      if (Number.isInteger(asNum) && asNum > 0) {
+        or.push({ leetcodeId: asNum });
+      }
+    }
   }
 
-  return and.length > 0 ? { AND: and } : {};
+  const compact = search.replace(/\s+/g, "");
+  if (compact.length >= 2 && compact !== search.trim()) {
+    or.push({ title: { contains: compact, mode: "insensitive" } });
+    or.push({ slug: { contains: compact.replace(/\s+/g, "-"), mode: "insensitive" } });
+  }
+
+  return { AND: [baseWhere, { OR: or }] };
+}
+
+type ProblemSearchRow = {
+  id: string;
+  leetcodeId: number;
+  title: string;
+  slug: string;
+};
+
+async function listProblemCatalogWithFlexibleSearch(
+  query: ListProblemsQuery,
+  baseWhere: Prisma.ProblemWhereInput,
+  userId?: string,
+): Promise<ProblemCatalogPage> {
+  const search = query.search!.trim();
+  const prefetchWhere = buildSearchPrefetchWhere(baseWhere, search);
+
+  const candidates = await prisma.problem.findMany({
+    where: prefetchWhere,
+    select: {
+      id: true,
+      leetcodeId: true,
+      title: true,
+      slug: true,
+    },
+    orderBy: { leetcodeId: "asc" },
+  });
+
+  const matched = (candidates as ProblemSearchRow[])
+    .filter((row) => matchesFlexibleProblemSearch(row.title, row.slug, row.leetcodeId, search))
+    .sort((a, b) => {
+      const diff =
+        scoreFlexibleProblemSearch(b.title, b.slug, b.leetcodeId, search) -
+        scoreFlexibleProblemSearch(a.title, a.slug, a.leetcodeId, search);
+      if (diff !== 0) return diff;
+      return a.leetcodeId - b.leetcodeId;
+    });
+
+  const total = matched.length;
+  const skip = (query.page - 1) * query.limit;
+  const pageIds = matched.slice(skip, skip + query.limit).map((r) => r.id);
+
+  if (pageIds.length === 0) {
+    return {
+      items: [],
+      page: query.page,
+      limit: query.limit,
+      total,
+      totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
+    };
+  }
+
+  const rows = await prisma.problem.findMany({
+    where: { id: { in: pageIds } },
+    select: problemCatalogSelect,
+  });
+
+  const byId = new Map(rows.map((row) => [row.id, row]));
+  const baseItems = mapRowsToCatalogItems(
+    pageIds
+      .map((id) => byId.get(id))
+      .filter((row): row is NonNullable<typeof row> => row !== undefined),
+  );
+
+  const searchWhere: Prisma.ProblemWhereInput = {
+    AND: [baseWhere, { id: { in: matched.map((r) => r.id) } }],
+  };
+  const enriched = await enrichCatalogPage(userId, searchWhere, baseItems);
+
+  return {
+    items: enriched.items,
+    page: query.page,
+    limit: query.limit,
+    total,
+    totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
+    ...(enriched.solvedCount !== undefined ? { solvedCount: enriched.solvedCount } : {}),
+  };
 }
 
 const problemCatalogSelect = {
@@ -61,17 +170,20 @@ const problemCatalogSelect = {
   examples: true,
 } as const;
 
-function mapRowToCatalogItem(row: {
-  id: string;
-  leetcodeId: number;
-  title: string;
-  slug: string;
-  difficulty: DifficultyLevel;
-  topics: string[];
-  isPremium: boolean;
-  parsedStatement: string | null;
-  examples: unknown;
-}): ProblemCatalogItem {
+function mapRowToCatalogItem(
+  row: {
+    id: string;
+    leetcodeId: number;
+    title: string;
+    slug: string;
+    difficulty: DifficultyLevel;
+    topics: string[];
+    isPremium: boolean;
+    parsedStatement: string | null;
+    examples: unknown;
+  },
+  solved: boolean,
+): ProblemCatalogItem {
   return {
     id: row.id,
     leetcodeId: row.leetcodeId,
@@ -84,7 +196,53 @@ function mapRowToCatalogItem(row: {
       row.parsedStatement !== null &&
       row.parsedStatement.trim().length > 0 &&
       row.examples !== null,
+    solved,
   };
+}
+
+async function enrichCatalogPage(
+  userId: string | undefined,
+  where: Prisma.ProblemWhereInput,
+  items: ProblemCatalogItem[],
+): Promise<{ items: ProblemCatalogItem[]; solvedCount?: number }> {
+  if (userId === undefined) {
+    return { items };
+  }
+
+  const problemIds = items.map((item) => item.id);
+  const [solvedCount, solves] = await Promise.all([
+    prisma.problem.count({
+      where: { ...where, userSolves: { some: { userId } } },
+    }),
+    problemIds.length > 0
+      ? prisma.userProblemSolve.findMany({
+          where: { userId, problemId: { in: problemIds } },
+          select: { problemId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const solvedIds = new Set(solves.map((row) => row.problemId));
+  return {
+    solvedCount,
+    items: items.map((item) => ({ ...item, solved: solvedIds.has(item.id) })),
+  };
+}
+
+function mapRowsToCatalogItems(
+  rows: Array<{
+    id: string;
+    leetcodeId: number;
+    title: string;
+    slug: string;
+    difficulty: DifficultyLevel;
+    topics: string[];
+    isPremium: boolean;
+    parsedStatement: string | null;
+    examples: unknown;
+  }>,
+): ProblemCatalogItem[] {
+  return rows.map((row) => mapRowToCatalogItem(row, false));
 }
 
 function shuffleInPlace<T>(array: T[]): void {
@@ -100,6 +258,7 @@ function shuffleInPlace<T>(array: T[]): void {
 async function listShuffledProblemCatalog(
   where: Prisma.ProblemWhereInput,
   limit: number,
+  userId?: string,
 ): Promise<ProblemCatalogPage> {
   const [total, idRows] = await Promise.all([
     prisma.problem.count({ where }),
@@ -122,22 +281,33 @@ async function listShuffledProblemCatalog(
   });
 
   const byId = new Map(rows.map((row) => [row.id, row]));
-  const items = pickedIds
-    .map((id) => byId.get(id))
-    .filter((row): row is NonNullable<typeof row> => row !== undefined)
-    .map(mapRowToCatalogItem);
+  const baseItems = mapRowsToCatalogItems(
+    pickedIds
+      .map((id) => byId.get(id))
+      .filter((row): row is NonNullable<typeof row> => row !== undefined),
+  );
+  const enriched = await enrichCatalogPage(userId, where, baseItems);
 
   return {
-    items,
+    items: enriched.items,
     page: 1,
     limit,
     total,
     totalPages: 1,
+    ...(enriched.solvedCount !== undefined ? { solvedCount: enriched.solvedCount } : {}),
   };
 }
 
-export async function listProblemCatalog(query: ListProblemsQuery): Promise<ProblemCatalogPage> {
+export async function listProblemCatalog(
+  query: ListProblemsQuery,
+  userId?: string,
+): Promise<ProblemCatalogPage> {
   const where = buildWhere(query);
+  const hasSearch = query.search !== undefined && query.search.trim().length > 0;
+
+  if (hasSearch && !query.shuffle) {
+    return listProblemCatalogWithFlexibleSearch(query, where, userId);
+  }
 
   if (query.shuffle) {
     if (query.page > 1) {
@@ -150,7 +320,7 @@ export async function listProblemCatalog(query: ListProblemsQuery): Promise<Prob
         totalPages: 1,
       };
     }
-    return listShuffledProblemCatalog(where, query.limit);
+    return listShuffledProblemCatalog(where, query.limit, userId);
   }
 
   const skip = (query.page - 1) * query.limit;
@@ -166,14 +336,15 @@ export async function listProblemCatalog(query: ListProblemsQuery): Promise<Prob
     prisma.problem.count({ where }),
   ]);
 
-  const items: ProblemCatalogItem[] = rows.map(mapRowToCatalogItem);
+  const enriched = await enrichCatalogPage(userId, where, mapRowsToCatalogItems(rows));
 
   return {
-    items,
+    items: enriched.items,
     page: query.page,
     limit: query.limit,
     total,
     totalPages: total === 0 ? 0 : Math.ceil(total / query.limit),
+    ...(enriched.solvedCount !== undefined ? { solvedCount: enriched.solvedCount } : {}),
   };
 }
 

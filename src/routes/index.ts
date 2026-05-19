@@ -10,6 +10,8 @@ import { userSchedulesRouter } from "../modules/userSchedules/userSchedules.rout
 import { authRouter } from "../modules/auth/auth.routes.js";
 import { usersRouter } from "../modules/users/users.routes.js";
 import { brainCacheRouter } from "../modules/brainCache/brainCache.routes.js";
+import { dueCalendarRouter } from "../modules/dueCalendar/dueCalendar.routes.js";
+import { autoRevisionsRouter } from "../modules/autoRevisions/autoRevision.routes.js";
 import { compilerRouter } from "../compiler/api/compiler.routes.js";
 import { problemByIdAdminRouter } from "../compiler/api/adminJudge.routes.js";
 import { judgePollRouter } from "../compiler/api/judgePoll.routes.js";
@@ -39,6 +41,8 @@ apiV1.use("/problems/by-id", problemByIdAdminRouter);
 apiV1.use("/judge", judgePollRouter);
 apiV1.use("/compiler", compilerRouter);
 apiV1.use("/brain-cache", brainCacheRouter);
+apiV1.use("/due-calendar", dueCalendarRouter);
+apiV1.use("/auto-revisions", autoRevisionsRouter);
 
 routes.use("/api/v1", apiV1);
 routes.use(rootRouter);

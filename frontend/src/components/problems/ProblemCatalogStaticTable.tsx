@@ -1,6 +1,7 @@
 import { Box, Typography, alpha } from "@mui/material";
 import type { ProblemCatalogItem } from "@/types/api.types";
 import { ProblemCatalogRow, gridColumns } from "@/components/problems/ProblemCatalogRow";
+import { FadeInCard } from "@/components/ui/FadeInCard";
 import { ProblemCatalogTableChrome } from "@/components/problems/ProblemCatalogTable";
 import { miui } from "@/theme/theme";
 
@@ -39,6 +40,7 @@ function CatalogHeader({ compact }: { compact: boolean }) {
       }}
     >
       {cell("#")}
+      <span />
       {cell("Title")}
       {cell("Level", "right")}
       {!compact && cell("Topics")}
@@ -63,7 +65,9 @@ export function ProblemCatalogStaticTable({ items, compact = false }: ProblemCat
         <Box component="ul" sx={{ listStyle: "none", m: 0, p: 0 }}>
           {items.map((row, index) => (
             <Box component="li" key={row.id}>
-              <ProblemCatalogRow row={row} compact={compact} index={index} gridColumns={cols} />
+              <FadeInCard delay={Math.min(index * 0.04, 0.32)}>
+                <ProblemCatalogRow row={row} compact={compact} index={index} gridColumns={cols} />
+              </FadeInCard>
             </Box>
           ))}
         </Box>

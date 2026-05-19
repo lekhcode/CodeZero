@@ -1,10 +1,10 @@
 import type { DifficultyLevel } from "@/types/api.types";
 
 const COLORS: Record<string, string> = {
-  EASY: "#059669",
-  MEDIUM: "#d97706",
-  HARD: "#dc2626",
-  MIXED: "#6366f1",
+  EASY: "#4ADE80",
+  MEDIUM: "#F6C360",
+  HARD: "#FC8181",
+  MIXED: "#9B7FEA",
 };
 
 export function difficultyColor(difficulty: string): string {

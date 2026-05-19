@@ -1,4 +1,4 @@
-import { Box, alpha } from "@mui/material";
+import { Box } from "@mui/material";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
 import LooksOneRoundedIcon from "@mui/icons-material/LooksOneRounded";
 import LooksTwoRoundedIcon from "@mui/icons-material/LooksTwoRounded";
@@ -84,9 +84,9 @@ export function SolvedDifficultyStatsBar({
         mb: compact ? 1 : 1.5,
         maxWidth: compact ? 400 : undefined,
         borderRadius: compact ? 2.5 : 3,
-        background: compact ? alpha(miui.bg, 0.6) : `linear-gradient(160deg, ${miui.paper} 0%, ${alpha(miui.bg, 0.85)} 100%)`,
+        bgcolor: miui.paper,
         border: `1px solid ${miui.border}`,
-        boxShadow: compact ? "none" : `0 4px 24px ${alpha(miui.accent, 0.08)}`,
+        boxShadow: "none",
       }}
     >
       {rings.map((ring, index) => (

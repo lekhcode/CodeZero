@@ -49,6 +49,7 @@ export function SubmissionHistoryRow({ submission, isLast = false }: SubmissionH
     <Box
       component={RouterLink}
       to={`/problems/${submission.problem.slug}`}
+      className="submission-row"
       sx={{
         display: "flex",
         alignItems: "center",

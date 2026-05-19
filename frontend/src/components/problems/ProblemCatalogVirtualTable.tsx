@@ -7,6 +7,7 @@ import {
   ROW_HEIGHT,
   gridColumns,
 } from "@/components/problems/ProblemCatalogRow";
+import { FadeInCard } from "@/components/ui/FadeInCard";
 import { ProblemCatalogTableChrome } from "@/components/problems/ProblemCatalogTable";
 import { miui } from "@/theme/theme";
 
@@ -45,6 +46,7 @@ function CatalogHeader({ compact }: { compact: boolean }) {
       }}
     >
       {headerCell("#")}
+      <span />
       {headerCell("Title")}
       {headerCell("Level", "right")}
       {!compact && headerCell("Topics")}
@@ -116,12 +118,14 @@ export function ProblemCatalogVirtualTable({
                   transform: `translateY(${vi.start}px)`,
                 }}
               >
-                <ProblemCatalogRow
-                  row={row}
-                  compact={compact}
-                  index={vi.index}
-                  gridColumns={cols}
-                />
+                <FadeInCard delay={Math.min(vi.index * 0.04, 0.32)} className="problem-row-wrap">
+                  <ProblemCatalogRow
+                    row={row}
+                    compact={compact}
+                    index={vi.index}
+                    gridColumns={cols}
+                  />
+                </FadeInCard>
               </Box>
             );
           })}

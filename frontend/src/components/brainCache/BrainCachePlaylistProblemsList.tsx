@@ -91,6 +91,7 @@ export function BrainCachePlaylistProblemsList({ playlist }: BrainCachePlaylistP
             component="span"
             size="small"
             variant="contained"
+            className="solve-btn btn-primary"
             tabIndex={-1}
             endIcon={<PlayArrowRoundedIcon />}
             sx={{ flexShrink: 0, fontWeight: 700, pointerEvents: "none" }}

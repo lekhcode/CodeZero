@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import { Alert, Box, CircularProgress, Typography, alpha } from "@mui/material";
 import { ProblemCatalogVirtualTable } from "@/components/problems/ProblemCatalogVirtualTable";
 import { ProblemCatalogStaticTable } from "@/components/problems/ProblemCatalogStaticTable";
@@ -19,6 +19,8 @@ type ProblemCatalogInfiniteListProps = {
   virtualized?: boolean;
   /** When false, only the first page is fetched (no scroll-to-load). */
   enableLoadMore?: boolean;
+  /** Receives filtered total and solved count (when logged in). */
+  onListStats?: Dispatch<SetStateAction<{ total: number; solvedCount?: number }>>;
 };
 
 const DEFAULT_LAB_HEIGHT = "min(72vh, 720px)";
@@ -30,6 +32,7 @@ export function ProblemCatalogInfiniteList({
   maxHeight = DEFAULT_LAB_HEIGHT,
   virtualized = true,
   enableLoadMore = true,
+  onListStats,
 }: ProblemCatalogInfiniteListProps) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -43,7 +46,12 @@ export function ProblemCatalogInfiniteList({
     isFetchingNextPage,
     hasNextPage,
     fetchNextPage,
+    solvedCount,
   } = useProblemCatalogInfinite(filters, pageSize);
+
+  useEffect(() => {
+    onListStats?.({ total, solvedCount });
+  }, [onListStats, total, solvedCount]);
 
   const fetchNextPageRef = useRef(fetchNextPage);
   fetchNextPageRef.current = fetchNextPage;

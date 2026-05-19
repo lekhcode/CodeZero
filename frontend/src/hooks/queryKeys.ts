@@ -32,9 +32,24 @@ export const queryKeys = {
   brainCacheMemberships: (slug: string) => ["brain-cache", "memberships", slug] as const,
   brainCachePlaylistProblems: (playlistId: string) =>
     ["brain-cache", "playlist", playlistId, "problems"] as const,
+  autoRevisionSummary: (timezone: string) => ["auto-revisions", "summary", timezone] as const,
+  autoRevisionToday: (timezone: string) => ["auto-revisions", "today", timezone] as const,
+  autoRevisionWeek: (weekOffset: number, timezone: string) =>
+    ["auto-revisions", "week", weekOffset, timezone] as const,
+  autoRevisionMonth: (monthOffset: number, timezone: string) =>
+    ["auto-revisions", "month", monthOffset, timezone] as const,
+  dueCalendarSummary: (year: number, monthIndex: number) =>
+    [...dueCalendarSummaryPrefix, year, monthIndex] as const,
+  dueCalendarSummaryWeek: (weekStart: string) =>
+    [...dueCalendarSummaryPrefix, "week", weekStart] as const,
+  dueCalendarDay: (date: string) => [...dueCalendarDayPrefix, date] as const,
 };
 
 export const brainCacheKeyPrefix = ["brain-cache"] as const;
+export const autoRevisionKeyPrefix = ["auto-revisions"] as const;
+
+export const dueCalendarSummaryPrefix = ["due-calendar-summary"] as const;
+export const dueCalendarDayPrefix = ["due-calendar-day"] as const;
 
 /** Invalidate all learning-progress queries after a successful submit. */
 /** Prefixes invalidated after a successful full submit. */
@@ -45,4 +60,8 @@ export const learningProgressKeyPrefixes = [
   ["submissions", "activity"] as const,
   queryKeys.learningInsights,
   ["submissions"] as const,
+  ["problems", "catalog"] as const,
+  dueCalendarSummaryPrefix,
+  dueCalendarDayPrefix,
+  autoRevisionKeyPrefix,
 ] as const;

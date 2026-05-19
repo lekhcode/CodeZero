@@ -1,21 +1,15 @@
-import { Box, Button, Chip, IconButton, Typography, alpha } from "@mui/material";
+import { Box, Button, IconButton, Typography } from "@mui/material";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import { Link as RouterLink } from "react-router-dom";
 import type { BrainCacheRevisionTask } from "@/types/brainCache.types";
 import { DifficultyChip } from "@/components/ui/DifficultyChip";
-import { bc } from "@/components/brainCache/brainCacheTheme";
-import { formatOverdueDayLabel, getUtcDateKey } from "@/utils/date";
 import { miui, sectionInsetX } from "@/theme/theme";
-
-const STATUS_COLOR: Record<string, string> = {
-  DUE: bc.teal,
-  OVERDUE: bc.danger,
-  PENDING: miui.textMuted,
-};
 
 type BrainCacheRevisionRowProps = {
   task: BrainCacheRevisionTask;
+  variant: "today" | "overdue";
+  daysOverdue?: number;
   onComplete: (id: string) => void;
   onSkip: (id: string) => void;
   busy?: boolean;
@@ -24,13 +18,14 @@ type BrainCacheRevisionRowProps = {
 
 export function BrainCacheRevisionRow({
   task,
+  variant,
+  daysOverdue,
   onComplete,
   onSkip,
   busy = false,
   isLast = false,
 }: BrainCacheRevisionRowProps) {
-  const accent = STATUS_COLOR[task.status] ?? miui.textMuted;
-  const dayLabel = formatOverdueDayLabel(task.dueDate, getUtcDateKey());
+  const ctaLabel = variant === "today" ? "Revise →" : "Solve →";
 
   return (
     <Box
@@ -38,7 +33,7 @@ export function BrainCacheRevisionRow({
         display: "flex",
         alignItems: "center",
         gap: 1,
-        py: 1,
+        py: 1.25,
         px: sectionInsetX,
         borderBottom: isLast ? "none" : `1px solid ${miui.border}`,
       }}
@@ -47,48 +42,58 @@ export function BrainCacheRevisionRow({
         <Typography
           component={RouterLink}
           to={`/problems/${task.problem.slug}`}
-          variant="body2"
           sx={{
-            fontWeight: 700,
-            color: "text.primary",
+            fontSize: "14px",
+            fontWeight: 500,
+            fontFamily: '"Space Grotesk", sans-serif',
+            color: miui.text,
             textDecoration: "none",
             display: "block",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
-            "&:hover": { color: bc.accent },
+            "&:hover": { color: miui.primary },
           }}
         >
           {task.problem.title}
         </Typography>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.35, alignItems: "center" }}>
-          <Typography variant="caption" color="text.secondary">
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mt: 0.5, alignItems: "center" }}>
+          <DifficultyChip difficulty={task.problem.difficulty} />
+          <Typography
+            sx={{
+              fontSize: "12px",
+              color: miui.textMuted,
+              fontFamily: '"JetBrains Mono", monospace',
+              fontWeight: 400,
+            }}
+          >
             {task.playlistName}
           </Typography>
-          <DifficultyChip difficulty={task.problem.difficulty} />
-          <Chip
-            label={dayLabel}
-            size="small"
-            sx={{
-              height: 20,
-              fontSize: "0.62rem",
-              fontWeight: 700,
-              bgcolor: alpha(accent, 0.1),
-              color: accent,
-            }}
-          />
+          {variant === "overdue" && daysOverdue !== undefined && daysOverdue > 0 ? (
+            <Typography sx={{ fontSize: "12px", color: miui.danger, fontWeight: 400 }}>
+              {daysOverdue} day{daysOverdue === 1 ? "" : "s"} overdue
+            </Typography>
+          ) : null}
         </Box>
       </Box>
+
       <Button
         component={RouterLink}
         to={`/problems/${task.problem.slug}`}
         size="small"
         variant="outlined"
-        sx={{ flexShrink: 0, fontWeight: 700, borderColor: bc.accentBorder, color: bc.accent }}
+        sx={{ flexShrink: 0, fontSize: "0.75rem", fontWeight: 500, py: 0.35 }}
       >
-        Solve
+        {ctaLabel}
       </Button>
-      <IconButton size="small" disabled={busy} onClick={() => onSkip(task.id)} aria-label="Skip revision">
+
+      <IconButton
+        size="small"
+        disabled={busy}
+        onClick={() => onSkip(task.id)}
+        aria-label="Skip revision"
+        sx={{ color: miui.textMuted, "&:hover": { color: miui.text } }}
+      >
         <CloseRoundedIcon fontSize="small" />
       </IconButton>
       <Button
@@ -96,8 +101,8 @@ export function BrainCacheRevisionRow({
         variant="contained"
         disabled={busy}
         onClick={() => onComplete(task.id)}
-        startIcon={<CheckRoundedIcon />}
-        sx={{ flexShrink: 0, fontWeight: 700, bgcolor: bc.accent }}
+        startIcon={<CheckRoundedIcon sx={{ fontSize: "16px !important" }} />}
+        sx={{ flexShrink: 0, fontWeight: 500, minWidth: 0, px: 1.25 }}
       >
         Done
       </Button>

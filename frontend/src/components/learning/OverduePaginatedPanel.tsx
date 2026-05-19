@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Box, IconButton, Typography, alpha } from "@mui/material";
+import { Box, IconButton, Typography } from "@mui/material";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { ScheduleAssignmentGroup } from "@/components/learning/ScheduleAssignmentGroup";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import type { TrackedAssignment } from "@/types/api.types";
 import { formatOverdueDayLabel, getUtcDateKey } from "@/utils/date";
-import { miui, sectionInsetX } from "@/theme/theme";
+import { miui, monoStatSx } from "@/theme/theme";
 
 const OVERDUE_LIST_MAX_HEIGHT = 280;
 
@@ -73,8 +73,8 @@ export function OverduePaginatedPanel({ assignments, isLoading = false }: Overdu
 
   if (assignments.length === 0) {
     return (
-      <Typography variant="body2" color="text.secondary" sx={{ py: 1 }}>
-        No overdue problems.
+      <Typography variant="body2" color="text.secondary" sx={{ py: 2, px: 2 }}>
+        Backlog clear. Discipline is showing.
       </Typography>
     );
   }
@@ -83,24 +83,51 @@ export function OverduePaginatedPanel({ assignments, isLoading = false }: Overdu
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0 }}>
       <Box
         sx={{
-          px: sectionInsetX,
-          py: 0.75,
-          mb: 0.5,
-          borderRadius: 1.5,
-          bgcolor: alpha("#EF4444", 0.08),
-          border: `1px solid ${alpha("#EF4444", 0.2)}`,
+          px: 2,
+          py: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 1,
+          borderBottom: `1px solid ${miui.border}`,
         }}
       >
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, display: "block" }}>
-          Showing overdue for
+        <Typography sx={{ fontSize: "13px", fontWeight: 400, color: miui.textMuted }}>
+          For {dayLabel.toLowerCase()}
         </Typography>
-        <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "#B91C1C", lineHeight: 1.3 }}>
-          {dayLabel}
-        </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.68rem" }}>
-          {pageItems.length} problem{pageItems.length === 1 ? "" : "s"} · day {pageIndex + 1} of{" "}
-          {sortedDates.length}
-        </Typography>
+        {sortedDates.length > 1 ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+            <IconButton
+              size="small"
+              disabled={!canGoNewer}
+              onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
+              aria-label="More recent overdue day"
+              sx={{ color: canGoNewer ? miui.accent : miui.textDim }}
+            >
+              <ChevronLeftRoundedIcon fontSize="small" />
+            </IconButton>
+            <Typography
+              sx={{
+                ...monoStatSx,
+                fontSize: "10px",
+                color: miui.textMuted,
+                minWidth: 48,
+                textAlign: "center",
+              }}
+            >
+              {pageIndex + 1}/{sortedDates.length}
+            </Typography>
+            <IconButton
+              size="small"
+              disabled={!canGoOlder}
+              onClick={() => setPageIndex((p) => Math.min(sortedDates.length - 1, p + 1))}
+              aria-label="Older overdue day"
+              sx={{ color: canGoOlder ? miui.accent : miui.textDim }}
+            >
+              <ChevronRightRoundedIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        ) : null}
       </Box>
 
       <Box
@@ -110,11 +137,10 @@ export function OverduePaginatedPanel({ assignments, isLoading = false }: Overdu
           overflowX: "hidden",
           WebkitOverflowScrolling: "touch",
           minHeight: 0,
-          pr: 0.25,
           "&::-webkit-scrollbar": { width: 5 },
           "&::-webkit-scrollbar-thumb": {
             borderRadius: 4,
-            bgcolor: alpha(miui.text, 0.15),
+            bgcolor: miui.borderStrong,
           },
         }}
       >
@@ -128,50 +154,6 @@ export function OverduePaginatedPanel({ assignments, isLoading = false }: Overdu
           />
         ))}
       </Box>
-
-      {sortedDates.length > 1 ? (
-        <Box
-          sx={{
-            mt: 1,
-            pt: 1,
-            px: 0.5,
-            borderTop: `1px solid ${miui.border}`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 0.5,
-          }}
-        >
-          <IconButton
-            size="small"
-            disabled={!canGoNewer}
-            onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
-            aria-label="More recent overdue day"
-            sx={{ color: canGoNewer ? "primary.main" : "text.disabled" }}
-          >
-            <ChevronLeftRoundedIcon fontSize="small" />
-          </IconButton>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontWeight: 700, textAlign: "center", flex: 1, minWidth: 0 }}
-          >
-            {pageIndex + 1} / {sortedDates.length}
-            {canGoOlder && sortedDates[pageIndex + 1] !== undefined
-              ? ` · next: ${formatOverdueDayLabel(sortedDates[pageIndex + 1], todayKey)}`
-              : ""}
-          </Typography>
-          <IconButton
-            size="small"
-            disabled={!canGoOlder}
-            onClick={() => setPageIndex((p) => Math.min(sortedDates.length - 1, p + 1))}
-            aria-label="Older overdue day"
-            sx={{ color: canGoOlder ? "primary.main" : "text.disabled" }}
-          >
-            <ChevronRightRoundedIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      ) : null}
     </Box>
   );
 }

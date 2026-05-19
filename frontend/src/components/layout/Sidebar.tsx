@@ -7,7 +7,6 @@ import {
   ListItemIcon,
   ListItemText,
   Tooltip,
-  alpha,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -24,7 +23,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import MenuOpenRoundedIcon from "@mui/icons-material/MenuOpenRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { useUiStore } from "@/store/uiStore";
-import { glassSx } from "@/theme/theme";
+import { glassSx, miui } from "@/theme/theme";
 
 const DRAWER_WIDTH = 260;
 const DRAWER_COLLAPSED = 72;
@@ -93,14 +92,19 @@ function NavContent({
               component={NavLink}
               to={item.to}
               onClick={onNavigate}
+              className={active ? "nav-item active" : "nav-item"}
               sx={{
-                borderRadius: 2,
-                mb: 0.5,
+                borderRadius: 0,
+                mb: 0.25,
                 justifyContent: collapsed ? "center" : "flex-start",
                 px: collapsed ? 1 : 2,
-                bgcolor: active ? alpha("#FF6B00", 0.1) : "transparent",
-                color: active ? "primary.main" : "text.primary",
-                "&:hover": { bgcolor: alpha("#FF6B00", 0.06) },
+                py: 1,
+                bgcolor: active ? miui.accentSoft : "transparent",
+                color: active ? "primary.main" : "text.secondary",
+                "&:hover": {
+                  bgcolor: miui.hover,
+                  color: "text.primary",
+                },
               }}
             >
               <ListItemIcon
@@ -163,8 +167,8 @@ export function Sidebar() {
         transition: theme.transitions.create("width", { duration: theme.transitions.duration.shorter }),
         flexShrink: 0,
         ...glassSx,
-        borderRight: 1,
-        borderColor: "divider",
+        bgcolor: miui.paper,
+        borderRight: `1px solid ${miui.border}`,
         minHeight: "100vh",
         position: "sticky",
         top: 0,

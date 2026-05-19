@@ -31,10 +31,12 @@ export function useProblemCatalogInfinite(
     query.data?.pages.flatMap((page) => page.items) ?? [];
 
   const total = query.data?.pages[0]?.total ?? 0;
+  const solvedCount = query.data?.pages[0]?.solvedCount;
 
   return {
     ...query,
     items,
     total,
+    solvedCount,
   };
 }

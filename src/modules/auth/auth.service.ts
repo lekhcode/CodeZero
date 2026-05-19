@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { Prisma } from "@prisma/client";
+import { AuthProvider, Prisma } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
 import { signAccessToken } from "../../config/jwt.js";
 import { logger } from "../../config/logger.js";
@@ -11,51 +11,26 @@ import type { LoginResult, PublicUser, RegisterResult } from "./auth.types.js";
 /** bcrypt cost factor — balance CPU vs brute-force resistance (12 is a sensible default in 2026). */
 const BCRYPT_ROUNDS = 12;
 
-function toPublicUser(row: { id: string; email: string; createdAt: Date }): PublicUser {
-  return { id: row.id, email: row.email, createdAt: row.createdAt };
+function toPublicUser(row: {
+  id: string;
+  email: string;
+  name: string | null;
+  avatar: string | null;
+  createdAt: Date;
+}): PublicUser {
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    avatar: row.avatar,
+    createdAt: row.createdAt,
+  };
 }
 
-export async function registerUser(input: RegisterBody): Promise<RegisterResult> {
-  const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
-
-  try {
-    const created = await prisma.user.create({
-      data: {
-        email: input.email,
-        password: passwordHash,
-        // `currentAccessToken` stays null until first successful login (single session starts then).
-      },
-      select: { id: true, email: true, createdAt: true },
-    });
-    return { user: toPublicUser(created) };
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-      throw ApiError.conflict("Email already registered");
-    }
-    throw err;
-  }
-}
-
-export async function loginUser(input: LoginBody): Promise<LoginResult> {
-  const user = await prisma.user.findUnique({
-    where: { email: input.email },
-    select: { id: true, email: true, password: true, createdAt: true },
-  });
-
-  if (user === null) {
-    throw ApiError.unauthorized("Invalid email or password");
-  }
-
-  const passwordOk = await bcrypt.compare(input.password, user.password);
-  if (!passwordOk) {
-    throw ApiError.unauthorized("Invalid email or password");
-  }
-
+/** Issue JWT + persist single-session token (shared by email login and OAuth). */
+export async function establishUserSession(user: PublicUser): Promise<LoginResult> {
   const accessToken = signAccessToken({ userId: user.id, email: user.email });
 
-  // Single session: persist token in DB, then verify read-back.
-  // Use `$executeRaw` for the UPDATE: some Prisma 7 + `adapter-pg` setups have been flaky with
-  // `user.update()` not visibly persisting `TEXT` fields while still returning 200 from the handler.
   await prisma.$transaction(async (tx) => {
     const affected = Number(
       await tx.$executeRaw(
@@ -78,12 +53,56 @@ export async function loginUser(input: LoginBody): Promise<LoginResult> {
     }
     logger.debug(
       { userId: user.id, storedTokenChars: row?.currentAccessToken?.length ?? 0 },
-      "login: currentAccessToken persisted",
+      "session: currentAccessToken persisted",
     );
   });
 
-  return {
-    user: { id: user.id, email: user.email, createdAt: user.createdAt },
-    accessToken,
-  };
+  return { user, accessToken };
+}
+
+export async function registerUser(input: RegisterBody): Promise<RegisterResult> {
+  const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);
+
+  try {
+    const created = await prisma.user.create({
+      data: {
+        email: input.email,
+        password: passwordHash,
+        provider: AuthProvider.EMAIL,
+        // `currentAccessToken` stays null until first successful login (single session starts then).
+      },
+      select: { id: true, email: true, name: true, avatar: true, createdAt: true },
+    });
+    return { user: toPublicUser(created) };
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      throw ApiError.conflict("Email already registered");
+    }
+    throw err;
+  }
+}
+
+export async function loginUser(input: LoginBody): Promise<LoginResult> {
+  const user = await prisma.user.findUnique({
+    where: { email: input.email },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatar: true,
+      password: true,
+      createdAt: true,
+    },
+  });
+
+  if (user === null || user.password === null) {
+    throw ApiError.unauthorized("Invalid email or password");
+  }
+
+  const passwordOk = await bcrypt.compare(input.password, user.password);
+  if (!passwordOk) {
+    throw ApiError.unauthorized("Invalid email or password");
+  }
+
+  return establishUserSession(toPublicUser(user));
 }

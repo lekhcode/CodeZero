@@ -93,4 +93,10 @@ export const env = {
   LEETCODE_DUMP_TOKEN: (process.env["LEETCODE_DUMP_TOKEN"] ?? "").trim(),
   /** Default delay between LeetCode detail fetches during dump (ms). */
   LEETCODE_DUMP_DELAY_MS: parsePositiveInt("LEETCODE_DUMP_DELAY_MS", 350),
+  /** OAuth — optional until social login is enabled */
+  GOOGLE_CLIENT_ID: (process.env["GOOGLE_CLIENT_ID"] ?? "").trim(),
+  GITHUB_CLIENT_ID: (process.env["GITHUB_CLIENT_ID"] ?? "").trim(),
+  GITHUB_CLIENT_SECRET: (process.env["GITHUB_CLIENT_SECRET"] ?? "").trim(),
+  /** Browser origin for OAuth redirects (no trailing slash) */
+  FRONTEND_URL: (process.env["FRONTEND_URL"] ?? "http://localhost:5173").replace(/\/$/, ""),
 } as const;

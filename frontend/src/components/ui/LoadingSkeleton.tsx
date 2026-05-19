@@ -1,4 +1,4 @@
-import { Grid, Skeleton, Stack } from "@mui/material";
+import { Box, Grid, Stack } from "@mui/material";
 
 type LoadingSkeletonProps = {
   variant?: "cards" | "list" | "detail";
@@ -9,9 +9,9 @@ export function LoadingSkeleton({ variant = "cards", count = 3 }: LoadingSkeleto
   if (variant === "detail") {
     return (
       <Stack spacing={2}>
-        <Skeleton variant="text" width="60%" height={48} />
-        <Skeleton variant="rounded" height={120} />
-        <Skeleton variant="rounded" height={280} />
+        <Box className="skeleton skeleton-title" sx={{ width: "60%" }} />
+        <Box className="skeleton skeleton-card" sx={{ height: 120 }} />
+        <Box className="skeleton skeleton-card" sx={{ height: 280 }} />
       </Stack>
     );
   }
@@ -20,7 +20,7 @@ export function LoadingSkeleton({ variant = "cards", count = 3 }: LoadingSkeleto
     return (
       <Stack spacing={1.5}>
         {Array.from({ length: count }).map((_, i) => (
-          <Skeleton key={i} variant="rounded" height={72} />
+          <Box key={i} className="skeleton skeleton-card" sx={{ height: 72 }} />
         ))}
       </Stack>
     );
@@ -30,7 +30,7 @@ export function LoadingSkeleton({ variant = "cards", count = 3 }: LoadingSkeleto
     <Grid container spacing={2}>
       {Array.from({ length: count }).map((_, i) => (
         <Grid key={i} size={{ xs: 12, sm: 6, md: 4 }}>
-          <Skeleton variant="rounded" height={180} />
+          <Box className="skeleton skeleton-card" sx={{ height: 180 }} />
         </Grid>
       ))}
     </Grid>

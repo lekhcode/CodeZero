@@ -1,4 +1,4 @@
-import { Box, Chip, Grid, Typography, alpha } from "@mui/material";
+import { Box, Button, Grid, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { FixedPageShell, ScrollRegion } from "@/components/layout/FixedPageShell";
@@ -9,7 +9,7 @@ import { queryKeys } from "@/hooks/queryKeys";
 import { CreateScheduleModal } from "@/modules/schedules/CreateScheduleModal";
 import type { ScheduleTemplate, ScheduleType } from "@/types/api.types";
 import { EXPLORE_SECTION_ORDER, EXPLORE_SECTION_TITLES } from "@/utils/scheduleCopy";
-import { miui } from "@/theme/theme";
+import { dashNavTabSx, miui } from "@/theme/theme";
 
 type Filter = "ALL" | ScheduleType;
 
@@ -53,12 +53,15 @@ export function TemplatesPage() {
   const sectionsToShow = filter === "ALL" ? EXPLORE_SECTION_ORDER : [filter];
 
   return (
-    <FixedPageShell>
+    <FixedPageShell sx={{ bgcolor: miui.bg }}>
       <Box sx={{ flexShrink: 0, mb: 1.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: "-0.02em" }}>
+        <Typography
+          variant="h6"
+          sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, color: miui.text }}
+        >
           Explore
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="body2" sx={{ color: miui.textMuted, fontWeight: 400, fontSize: "13px" }}>
           {enrolledCount}/5 schedules enrolled · pick your practice paths
         </Typography>
       </Box>
@@ -67,26 +70,22 @@ export function TemplatesPage() {
         sx={{
           flexShrink: 0,
           display: "flex",
-          gap: 0.75,
+          gap: 0.5,
           flexWrap: "wrap",
           mb: 1.5,
+          borderBottom: `1px solid ${miui.border}`,
         }}
       >
         {FILTERS.map((f) => (
-          <Chip
+          <Button
             key={f.id}
-            label={f.label}
+            variant="text"
             size="small"
-            clickable
             onClick={() => setFilter(f.id)}
-            sx={{
-              height: 28,
-              fontWeight: 600,
-              bgcolor: filter === f.id ? alpha(miui.primary, 0.12) : alpha("#000", 0.04),
-              color: filter === f.id ? "primary.main" : "text.secondary",
-              border: "none",
-            }}
-          />
+            sx={dashNavTabSx(filter === f.id)}
+          >
+            {f.label}
+          </Button>
         ))}
       </Box>
 
@@ -101,10 +100,20 @@ export function TemplatesPage() {
 
             return (
               <Box key={type} sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.25 }}>
+                <Typography
+                  sx={{
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    fontWeight: 600,
+                    fontSize: "16px",
+                    color: miui.text,
+                    mb: 0.25,
+                  }}
+                >
                   {section.title}
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1.5 }}>
+                <Typography
+                  sx={{ display: "block", mb: 1.5, fontSize: "13px", color: miui.textMuted, fontWeight: 400 }}
+                >
                   {section.subtitle}
                 </Typography>
                 <Grid container spacing={1.5}>

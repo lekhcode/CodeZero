@@ -1,50 +1,98 @@
-import { Box, Grid, Typography, alpha } from "@mui/material";
-import { miui, sectionCardSx, sectionContentSx } from "@/theme/theme";
+import { Box, Typography } from "@mui/material";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { miui, monoStatSx } from "@/theme/theme";
 
 type StatItem = {
   label: string;
   value: number | string;
-  color?: string;
+  variant: "todo" | "overdue" | "done";
+  pulse?: boolean;
+};
+
+const DOT_COLOR: Record<StatItem["variant"], string> = {
+  todo: miui.accent,
+  overdue: miui.danger,
+  done: miui.success,
 };
 
 export function StatsStrip({ items }: { items: StatItem[] }) {
   return (
-    <Box sx={{ ...sectionCardSx, ...sectionContentSx, mb: 1.5, flexShrink: 0 }}>
-      <Grid container spacing={1} sx={{ width: "100%", m: 0 }}>
-        {items.map((item) => (
-          <Grid key={item.label} size={{ xs: 6, sm: 3 }}>
+    <Box
+      className="today-stats-row"
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 1,
+        mb: 1.5,
+        flexShrink: 0,
+      }}
+    >
+      {items.map((item) => {
+        const num = Number(item.value);
+        const dotColor = DOT_COLOR[item.variant];
+        const isOverdueActive = item.variant === "overdue" && num > 0;
+        let valueColor: string = miui.text;
+        if (item.variant === "overdue") {
+          valueColor = num > 0 ? miui.danger : miui.textDim;
+        } else if (item.variant === "done") {
+          valueColor = num > 0 ? miui.success : miui.textDim;
+        }
+
+        return (
+          <Box
+            key={item.label}
+            className={`stat-chip${isOverdueActive ? " overdue-active" : ""}`}
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 1,
+              px: 2,
+              py: 1,
+              bgcolor: miui.elevated,
+              border: `1px solid ${miui.border}`,
+              borderRadius: "8px",
+              minWidth: 0,
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
             <Box
               sx={{
-                px: 1.25,
-                py: 0.85,
-                borderRadius: 1.5,
-                bgcolor: alpha(item.color ?? miui.primary, 0.06),
-                minWidth: 0,
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                bgcolor: dotColor,
+                flexShrink: 0,
+              }}
+            />
+            <Typography
+              sx={{
+                fontSize: "12px",
+                fontWeight: 400,
+                color: miui.textMuted,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
               }}
             >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontSize: "0.62rem", display: "block", lineHeight: 1.2 }}
-                noWrap
-              >
-                {item.label}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{
-                  fontWeight: 800,
-                  color: item.color ?? "text.primary",
-                  lineHeight: 1.2,
-                }}
-                noWrap
-              >
-                {item.value}
-              </Typography>
-            </Box>
-          </Grid>
-        ))}
-      </Grid>
+              {item.label}
+            </Typography>
+            <Typography
+              className={isOverdueActive ? "overdue-count" : undefined}
+              component="span"
+              sx={{
+                ...monoStatSx,
+                fontSize: "20px",
+                fontWeight: 600,
+                color: valueColor,
+                lineHeight: 1,
+                ml: 0.25,
+              }}
+            >
+              {typeof item.value === "number" ? <AnimatedNumber value={num} /> : item.value}
+            </Typography>
+          </Box>
+        );
+      })}
     </Box>
   );
 }

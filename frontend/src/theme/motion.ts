@@ -21,7 +21,7 @@ export const springSoft = {
 };
 
 export const hoverLift = {
-  y: -3,
+  y: -2,
   transition: transitionFast,
 };
 

@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthLayout } from "@/layouts/AuthLayout";
 import { AppLayout } from "@/layouts/AppLayout";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
+import { GitHubCallbackPage } from "@/pages/auth/GitHubCallbackPage";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { DashboardPage } from "@/pages/dashboard/DashboardPage";
@@ -17,6 +18,9 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/auth/github/callback" element={<GitHubCallbackPage />} />
+        <Route path="/auth/github/success" element={<GitHubCallbackPage />} />
+
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />

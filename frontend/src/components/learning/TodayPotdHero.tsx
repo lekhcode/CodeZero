@@ -14,6 +14,7 @@ import type { TrackedAssignment } from "@/types/api.types";
 import { AnimatedBanner } from "@/components/ui/AnimatedBanner";
 import { DifficultyChip } from "@/components/ui/DifficultyChip";
 import dayjs from "dayjs";
+import { miui } from "@/theme/theme";
 
 type TodayPotdHeroProps = {
   assignment: TrackedAssignment;
@@ -33,9 +34,10 @@ export function TodayPotdHero({ assignment }: TodayPotdHeroProps) {
       sx={{
         mb: 2,
         borderRadius: 3,
-        border: `1px solid ${alpha(POTD_ACCENT, 0.35)}`,
-        background: `linear-gradient(145deg, ${alpha(POTD_ACCENT, 0.18)} 0%, ${alpha("#fff", 0.98)} 42%, ${alpha(POTD_ACCENT_2, 0.08)} 100%)`,
-        boxShadow: `0 8px 32px ${alpha(POTD_ACCENT, 0.12)}`,
+        border: `1px solid ${miui.border}`,
+        borderLeft: `3px solid ${POTD_ACCENT}`,
+        bgcolor: miui.paper,
+        boxShadow: "none",
       }}
     >
       <Box sx={{ p: { xs: 2, sm: 2.5 } }}>

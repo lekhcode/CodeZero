@@ -43,9 +43,8 @@ export function ProblemCatalogFilters({
         p: 2,
         borderRadius: 2.5,
         border: `1px solid ${miui.border}`,
-        bgcolor: alpha(miui.paper, 0.95),
-        background: `linear-gradient(135deg, ${alpha(miui.primary, 0.04)} 0%, ${miui.paper} 50%)`,
-        boxShadow: `0 4px 20px ${alpha(miui.text, 0.04)}`,
+        bgcolor: miui.paper,
+        boxShadow: "none",
       }}
     >
       <TextField
@@ -113,9 +112,9 @@ export function ProblemCatalogFilters({
                   transform: "scale(1.02)",
                 },
                 "&.Mui-selected.MuiToggleButton-root": {
-                  bgcolor: alpha(miui.primary, 0.12),
+                  bgcolor: miui.accentDim,
                   color: miui.primary,
-                  borderColor: alpha(miui.primary, 0.35),
+                  borderColor: miui.primary,
                 },
               },
             }}

@@ -1,24 +1,21 @@
-import { Box, Typography, alpha } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
-import CircleRoundedIcon from "@mui/icons-material/CircleRounded";
-import type { TrackedAssignment, TrackedAssignmentStatus } from "@/types/api.types";
-import { sectionInsetX } from "@/theme/theme";
-
-const DOT_COLOR: Record<TrackedAssignmentStatus, string> = {
-  PENDING: "#0ea5e9",
-  SOLVED: "#22c55e",
-  MISSED: "#ef4444",
-  SKIPPED: "#94a3b8",
-};
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import type { TrackedAssignment } from "@/types/api.types";
+import { accentLinkSx, miui, monoStatSx } from "@/theme/theme";
 
 type CompactAssignmentRowProps = {
   assignment: TrackedAssignment;
   isLast?: boolean;
+  variant?: "default" | "overdue";
 };
 
-export function CompactAssignmentRow({ assignment, isLast = false }: CompactAssignmentRowProps) {
-  const dot = DOT_COLOR[assignment.status];
+export function CompactAssignmentRow({
+  assignment,
+  isLast = false,
+  variant = "default",
+}: CompactAssignmentRowProps) {
+  const isOverdue = variant === "overdue";
 
   return (
     <Box
@@ -27,38 +24,87 @@ export function CompactAssignmentRow({ assignment, isLast = false }: CompactAssi
       sx={{
         display: "flex",
         alignItems: "center",
-        gap: 1.25,
-        px: sectionInsetX,
-        py: 1,
+        gap: 1,
+        pl: 4,
+        pr: 2,
+        py: 1.5,
         minHeight: 48,
         textDecoration: "none",
         color: "inherit",
-        borderBottom: isLast ? "none" : `1px solid ${alpha("#0f172a", 0.06)}`,
-        "&:hover": { bgcolor: alpha("#4f46e5", 0.04) },
+        borderBottom: isLast ? "none" : `1px solid ${miui.border}`,
+        transition: "color 150ms ease",
+        "@media (prefers-reduced-motion: no-preference)": {
+          "&:hover .start-link": {
+            color: miui.text,
+            transform: "translateX(2px)",
+          },
+        },
       }}
     >
-      <CircleRoundedIcon sx={{ fontSize: 8, color: dot, flexShrink: 0 }} />
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box
+        sx={{
+          width: 5,
+          height: 5,
+          borderRadius: "50%",
+          flexShrink: 0,
+          bgcolor: isOverdue ? miui.danger : miui.borderStrong,
+        }}
+      />
+      <Typography
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          fontSize: "14px",
+          fontWeight: 400,
+          lineHeight: 1.25,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          color: miui.text,
+        }}
+      >
+        {assignment.problem.title}
+      </Typography>
+
+      {isOverdue ? (
+        <>
+          <Box
+            sx={{
+              ...monoStatSx,
+              fontSize: "10px",
+              fontWeight: 400,
+              px: "6px",
+              py: "1px",
+              borderRadius: "3px",
+              bgcolor: miui.dangerDim,
+              border: `1px solid ${miui.dangerBorder}`,
+              color: miui.danger,
+              flexShrink: 0,
+            }}
+          >
+            DUE
+          </Box>
+          <ArrowForwardRoundedIcon sx={{ fontSize: 14, color: miui.textDim, flexShrink: 0 }} />
+        </>
+      ) : (
         <Typography
-          variant="body2"
+          className="start-link"
           sx={{
-            fontWeight: 600,
-            lineHeight: 1.25,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            ...accentLinkSx,
+            fontSize: "12px",
+            fontWeight: 500,
+            flexShrink: 0,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.25,
+            "@media (prefers-reduced-motion: no-preference)": {
+              "&:hover": { color: miui.accentStrong, transform: "translateX(2px)" },
+            },
           }}
         >
-          {assignment.problem.title}
+          START →
         </Typography>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.68rem" }}>
-          {assignment.scheduleName}
-        </Typography>
-      </Box>
-      <Typography variant="caption" sx={{ fontWeight: 700, color: dot, fontSize: "0.65rem", flexShrink: 0 }}>
-        {assignment.status === "PENDING" ? "Start" : assignment.status === "SOLVED" ? "Done" : "Due"}
-      </Typography>
-      <ChevronRightRoundedIcon sx={{ fontSize: 16, color: alpha("#0f172a", 0.28) }} />
+      )}
     </Box>
   );
 }

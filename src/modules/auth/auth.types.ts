@@ -7,6 +7,8 @@
 export type PublicUser = {
   id: string;
   email: string;
+  name: string | null;
+  avatar: string | null;
   createdAt: Date;
 };
 
@@ -15,6 +17,6 @@ export type RegisterResult = {
 };
 
 export type LoginResult = {
-  user: Pick<PublicUser, "id" | "email" | "createdAt">;
+  user: PublicUser;
   accessToken: string;
 };

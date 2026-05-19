@@ -12,7 +12,8 @@ import { problemsService } from "@/services/problems.service";
 import { queryKeys } from "@/hooks/queryKeys";
 import type { CatalogFilterState } from "@/hooks/useProblemCatalogInfinite";
 import type { DifficultyLevel } from "@/types/api.types";
-import { miui } from "@/theme/theme";
+import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
+import { miui, monoStatSx } from "@/theme/theme";
 import { staggerContainer, staggerItem, transitionFast } from "@/theme/motion";
 
 const PAGE_SIZE = 50;
@@ -63,10 +64,36 @@ export function LabPage() {
     );
   }, []);
 
+  const [listStats, setListStats] = useState<{ total: number; solvedCount?: number }>({
+    total: 0,
+  });
+
+  const solvedLabel =
+    listStats.solvedCount !== undefined && listStats.total > 0 ? (
+      <Typography
+        sx={{
+          ...monoStatSx,
+          fontSize: "12px",
+          fontWeight: 500,
+          color: miui.textMuted,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <Box component="span" sx={{ color: miui.success }}>
+          <AnimatedNumber value={listStats.solvedCount} />
+        </Box>
+        {" / "}
+        <AnimatedNumber value={listStats.total} duration={500} /> solved
+      </Typography>
+    ) : null;
+
   return (
     <PageContainer sx={{ maxWidth: 1200 }}>
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={transitionFast}>
-        <Typography variant="h5" sx={{ fontWeight: 800, letterSpacing: "-0.03em", mb: 2 }}>
+        <Typography
+          variant="h5"
+          sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: "1.75rem", mb: 2 }}
+        >
           Problem library
         </Typography>
       </motion.div>
@@ -130,8 +157,12 @@ export function LabPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...transitionFast, delay: 0.12 }}
       >
-        <LabSection title="Problems">
-          <ProblemCatalogInfiniteList filters={catalogFilters} pageSize={PAGE_SIZE} />
+        <LabSection title="Problems" action={solvedLabel}>
+          <ProblemCatalogInfiniteList
+            filters={catalogFilters}
+            pageSize={PAGE_SIZE}
+            onListStats={setListStats}
+          />
         </LabSection>
       </motion.div>
     </PageContainer>

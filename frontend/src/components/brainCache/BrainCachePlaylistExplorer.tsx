@@ -13,7 +13,7 @@ import PlaylistPlayRoundedIcon from "@mui/icons-material/PlaylistPlayRounded";
 import type { BrainCachePlaylist } from "@/types/brainCache.types";
 import { BrainCachePlaylistProblemsList } from "@/components/brainCache/BrainCachePlaylistProblemsList";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
-import { bc } from "@/components/brainCache/brainCacheTheme";
+import { FadeInCard } from "@/components/ui/FadeInCard";
 import { miui, sectionInsetX } from "@/theme/theme";
 
 type BrainCachePlaylistExplorerProps = {
@@ -50,7 +50,7 @@ export function BrainCachePlaylistExplorer({
   if (playlists.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary" sx={{ py: 3, textAlign: "center" }}>
-        No playlists yet. Create one, then add problems from any problem page using the Brain Cache button.
+        Your training journal is empty. Build your first playlist.
       </Typography>
     );
   }
@@ -69,7 +69,9 @@ export function BrainCachePlaylistExplorer({
     >
       <Box
         sx={{
-          width: { xs: "100%", md: 260 },
+          width: { xs: "100%", md: "auto" },
+          minWidth: { md: 220 },
+          maxWidth: { md: 260 },
           flexShrink: 0,
           borderRight: { md: `1px solid ${miui.border}` },
           borderBottom: { xs: `1px solid ${miui.border}`, md: "none" },
@@ -84,52 +86,88 @@ export function BrainCachePlaylistExplorer({
             display: "block",
             px: sectionInsetX,
             py: 1,
-            fontWeight: 700,
-            color: "text.secondary",
+            fontWeight: 500,
+            color: miui.textMuted,
             borderBottom: `1px solid ${miui.border}`,
           }}
         >
           Playlists ({playlists.length})
         </Typography>
         <List dense disablePadding>
-          {playlists.map((p) => {
+          {playlists.map((p, index) => {
             const active = p.id === selectedId;
             return (
+              <FadeInCard key={p.id} delay={Math.min(index * 0.08, 0.24)} className="card">
               <ListItemButton
-                key={p.id}
                 selected={active}
                 onClick={() => setSelectedId(p.id)}
                 sx={{
                   py: 1.25,
                   borderBottom: `1px solid ${miui.border}`,
-                  borderLeft: active ? `3px solid ${bc.accent}` : "3px solid transparent",
+                  borderLeft: active ? `3px solid ${miui.accent}` : "3px solid transparent",
                   "&.Mui-selected": {
-                    bgcolor: alpha(bc.accent, 0.08),
-                    "&:hover": { bgcolor: alpha(bc.accent, 0.1) },
+                    bgcolor: miui.hover,
+                    "&:hover": { bgcolor: miui.hover },
                   },
                 }}
               >
                 <PlaylistPlayRoundedIcon
-                  sx={{ fontSize: 18, mr: 1, color: active ? bc.accent : "text.secondary", flexShrink: 0 }}
+                  sx={{ fontSize: 18, mr: 1, color: active ? miui.accent : miui.textMuted, flexShrink: 0 }}
                 />
                 <ListItemText
+                  disableTypography
+                  sx={{ minWidth: 0, mr: 0.5 }}
                   primary={
-                    <Typography component="span" variant="body2" sx={{ fontWeight: active ? 800 : 600 }} noWrap>
+                    <Typography
+                      component="span"
+                      title={p.name}
+                      variant="body2"
+                      sx={{
+                        fontWeight: active ? 500 : 400,
+                        display: "block",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        color: miui.text,
+                      }}
+                    >
                       {p.name}
                     </Typography>
                   }
                   secondary={
-                    <Typography component="span" variant="caption" color="text.secondary" noWrap>
+                    <Typography
+                      component="span"
+                      title={`${p.problemCount} problems · every ${p.revisionIntervalDays}d`}
+                      sx={{
+                        display: "block",
+                        fontSize: "11px",
+                        color: miui.textMuted,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        mt: 0.25,
+                        fontWeight: 400,
+                      }}
+                    >
                       {`${p.problemCount} problems · every ${p.revisionIntervalDays}d`}
                     </Typography>
                   }
                 />
                 {(p.dueCount > 0 || p.overdueCount > 0) && (
-                  <Typography variant="caption" sx={{ color: p.overdueCount > 0 ? "error.main" : bc.teal, fontWeight: 700, ml: 0.5 }}>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      color: p.overdueCount > 0 ? miui.danger : miui.textMuted,
+                      fontWeight: 400,
+                      ml: 0.5,
+                      flexShrink: 0,
+                    }}
+                  >
                     {p.overdueCount > 0 ? p.overdueCount : p.dueCount}
                   </Typography>
                 )}
               </ListItemButton>
+              </FadeInCard>
             );
           })}
         </List>
@@ -151,7 +189,11 @@ export function BrainCachePlaylistExplorer({
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 800 }} noWrap>
+                <Typography
+                  variant="subtitle2"
+                  title={selected.name}
+                  sx={{ fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                >
                   {selected.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">

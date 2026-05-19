@@ -6,13 +6,15 @@ import {
   Select,
   Tooltip,
   Typography,
-  alpha,
 } from "@mui/material";
 import dayjs, { type Dayjs } from "dayjs";
 import type { SubmissionActivitySummary } from "@/types/api.types";
-import { miui } from "@/theme/theme";
+import { miui, monoStatSx } from "@/theme/theme";
 
 const ROLLING_VALUE = "rolling";
+
+/** Legend swatches: empty + three activity steps. */
+const LEGEND_LEVELS = [0, 1, 2, 4] as const;
 
 type WeekColumn = Array<{ date: string; count: number } | null>;
 
@@ -30,8 +32,8 @@ function parseLocalDate(dateStr: string): Dayjs {
 
 function intensityLevel(count: number): number {
   if (count <= 0) return 0;
-  if (count === 1) return 1;
-  if (count <= 3) return 2;
+  if (count <= 2) return 1;
+  if (count <= 4) return 2;
   if (count <= 6) return 3;
   return 4;
 }
@@ -152,7 +154,7 @@ export function SubmissionActivityHeatmap({
                 fontSize: "0.78rem",
                 fontWeight: 700,
                 borderRadius: 2,
-                bgcolor: alpha(miui.primary, 0.06),
+                bgcolor: miui.accentSoft,
                 "& .MuiOutlinedInput-notchedOutline": { borderColor: miui.border },
               }}
             >
@@ -169,45 +171,69 @@ export function SubmissionActivityHeatmap({
         </Box>
       </Box>
 
-      <Box ref={heatmapScrollRef} sx={{ width: "100%", overflowX: "auto", pb: 0.5 }}>
-        <Box sx={{ display: "flex", alignItems: "flex-end", minWidth: "min-content", py: 0.25 }}>
-          {monthBlocks.map((block, bi) => (
-            <Box
-              key={block.monthKey}
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                flexShrink: 0,
-                mr: bi < monthBlocks.length - 1 ? 2.5 : 0,
-              }}
-            >
-              <Typography
-                variant="caption"
+      <Box className="heatmap-mask-wrapper">
+        <Box
+          ref={heatmapScrollRef}
+          className="heatmap-scroll"
+          sx={{
+            width: "100%",
+            pl: 1,
+            pr: 3,
+            boxSizing: "content-box",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "flex-end",
+              width: "max-content",
+              minWidth: "100%",
+              py: 1,
+              px: "8px 24px 12px 8px",
+              pr: 4,
+            }}
+          >
+            {monthBlocks.map((block, bi) => (
+              <Box
+                key={block.monthKey}
                 sx={{
-                  fontSize: "0.65rem",
-                  color: "text.disabled",
-                  fontWeight: 600,
-                  mb: 0.5,
-                  whiteSpace: "nowrap",
+                  display: "flex",
+                  flexDirection: "column",
+                  flexShrink: 0,
+                  mr: bi < monthBlocks.length - 1 ? 2.5 : 3,
                 }}
               >
-                {block.label}
-              </Typography>
-              <Box sx={{ display: "flex", gap: 0.35 }}>
-                {block.weeks.map((week, wi) => (
-                  <Box key={`${block.monthKey}-w${wi}`} sx={{ display: "flex", flexDirection: "column", gap: 0.35 }}>
-                    {week.map((cell, di) => (
-                      <HeatCell
-                        key={cell ? cell.date : `${block.monthKey}-w${wi}-p${di}`}
-                        cell={cell}
-                        isToday={isTodayCell(cell)}
-                      />
-                    ))}
-                  </Box>
-                ))}
+                <Typography
+                  variant="caption"
+                  sx={{
+                    fontSize: "0.65rem",
+                    color: "text.disabled",
+                    fontWeight: 600,
+                    mb: 0.5,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {block.label}
+                </Typography>
+                <Box sx={{ display: "flex", gap: 0.35 }}>
+                  {block.weeks.map((week, wi) => (
+                    <Box
+                      key={`${block.monthKey}-w${wi}`}
+                      sx={{ display: "flex", flexDirection: "column", gap: 0.35 }}
+                    >
+                      {week.map((cell, di) => (
+                        <HeatCell
+                          key={cell ? cell.date : `${block.monthKey}-w${wi}-p${di}`}
+                          cell={cell}
+                          isToday={isTodayCell(cell)}
+                        />
+                      ))}
+                    </Box>
+                  ))}
+                </Box>
               </Box>
-            </Box>
-          ))}
+            ))}
+          </Box>
         </Box>
       </Box>
 
@@ -220,22 +246,38 @@ export function SubmissionActivityHeatmap({
           mt: 0.75,
         }}
       >
-        <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.62rem", mr: 0.5 }}>
+        <Typography
+          sx={{
+            ...monoStatSx,
+            fontSize: "11px",
+            fontWeight: 400,
+            color: miui.textDim,
+            mr: 0.5,
+          }}
+        >
           Less
         </Typography>
-        {miui.heatmap.map((color, i) => (
+        {LEGEND_LEVELS.map((level) => (
           <Box
-            key={i}
+            key={level}
             sx={{
               width: 10,
               height: 10,
               borderRadius: 0.5,
-              bgcolor: color,
-              border: i === 0 ? `1px solid ${miui.border}` : "none",
+              bgcolor: miui.heatmap[level] ?? miui.heatmap[0],
+              border: level === 0 ? `1px solid ${miui.border}` : "none",
             }}
           />
         ))}
-        <Typography variant="caption" color="text.disabled" sx={{ fontSize: "0.62rem", ml: 0.5 }}>
+        <Typography
+          sx={{
+            ...monoStatSx,
+            fontSize: "11px",
+            fontWeight: 400,
+            color: miui.textDim,
+            ml: 0.5,
+          }}
+        >
           More
         </Typography>
       </Box>
@@ -263,7 +305,10 @@ function StatInline({
         {label}
         {hint ? ` · ${hint}` : ""}
       </Typography>
-      <Typography variant="subtitle2" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+      <Typography
+        variant="subtitle2"
+        sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, lineHeight: 1.1 }}
+      >
         {value}
       </Typography>
     </Box>
@@ -298,13 +343,19 @@ function HeatCell({
           bgcolor: color,
           boxSizing: "border-box",
           border: isToday
-            ? `2px solid ${miui.primary}`
+            ? `2px solid ${miui.accent}`
             : level === 0
               ? `1px solid ${miui.border}`
               : "none",
           cursor: cell.count > 0 ? "pointer" : "default",
-          transition: "transform 0.12s ease",
-          "&:hover": cell.count > 0 ? { transform: "scale(1.2)" } : undefined,
+          transition: "transform 150ms ease",
+          ...(cell.count > 0
+            ? {
+                "@media (prefers-reduced-motion: no-preference)": {
+                  "&:hover": { transform: "scale(1.2)" },
+                },
+              }
+            : {}),
         }}
       />
     </Tooltip>

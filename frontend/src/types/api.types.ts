@@ -19,6 +19,8 @@ export type ScheduleType = "DAILY_POTD" | "TOPIC" | "STUDY_PLAN";
 export type PublicUser = {
   id: string;
   email: string;
+  name: string | null;
+  avatar: string | null;
   createdAt: string;
 };
 
@@ -88,6 +90,7 @@ export type ProblemCatalogItem = {
   topics: string[];
   isPremium: boolean;
   hasDetail: boolean;
+  solved: boolean;
 };
 
 export type ProblemCatalogPage = {
@@ -96,6 +99,7 @@ export type ProblemCatalogPage = {
   limit: number;
   total: number;
   totalPages: number;
+  solvedCount?: number;
 };
 
 export type ProblemTopicTag = {

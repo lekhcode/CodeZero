@@ -22,3 +22,9 @@ export const loginBodySchema = z.object({
 
 export type RegisterBody = z.infer<typeof registerBodySchema>;
 export type LoginBody = z.infer<typeof loginBodySchema>;
+
+export const googleAuthBodySchema = z.object({
+  credential: z.string().min(1, { message: "Google credential is required" }),
+});
+
+export type GoogleAuthBody = z.infer<typeof googleAuthBodySchema>;

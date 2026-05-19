@@ -28,6 +28,7 @@ problemsRouter.get(
 
 problemsRouter.get(
   "/",
+  optionalAuth,
   validateQuery(listProblemsQuerySchema),
   asyncHandler(leetcodeController.listProblems),
 );

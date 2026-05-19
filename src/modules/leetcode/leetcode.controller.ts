@@ -8,7 +8,7 @@ import * as leetcodeService from "./leetcode.service.js";
 
 export async function listProblems(req: Request, res: Response): Promise<void> {
   const query = readValidatedQuery<ListProblemsQuery>(req);
-  const page = await catalogService.listProblemCatalog(query);
+  const page = await catalogService.listProblemCatalog(query, req.user?.id);
   ApiResponse.success(res, page);
 }
 
