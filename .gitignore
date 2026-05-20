@@ -5,6 +5,9 @@ node_modules/
 dist/
 *.tsbuildinfo
 
+# Frontend (excluded from this repo)
+frontend/
+
 # Environment (never commit secrets)
 .env
 .env.local
