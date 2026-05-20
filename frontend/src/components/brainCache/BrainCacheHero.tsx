@@ -12,7 +12,9 @@ import { dotGridHeroSx, miui, monoStatSx } from "@/theme/theme";
 type BrainCacheHeroProps = {
   stats: BrainCacheAnalytics | undefined;
   loading?: boolean;
-  onNewPlaylist: () => void;
+  onNewPlaylist?: () => void;
+  /** Metrics only — page supplies the title row (Today-style layout). */
+  embedded?: boolean;
 };
 
 const METRICS: Array<{
@@ -26,60 +28,75 @@ const METRICS: Array<{
   { key: "revisionStreakDays", label: "Day streak", color: miui.warning },
 ];
 
-export function BrainCacheHero({ stats, loading = false, onNewPlaylist }: BrainCacheHeroProps) {
+export function BrainCacheHero({
+  stats,
+  loading = false,
+  onNewPlaylist,
+  embedded = false,
+}: BrainCacheHeroProps) {
   const completionPct = stats?.completionRatePct ?? 0;
   const streak = stats?.revisionStreakDays ?? 0;
 
-  return (
-    <AnimatedBanner
-      accent={bc.accent}
-      accentSecondary={miui.primary}
-      subtle
-      sx={{
-        mb: 2,
-        p: 2,
-        borderRadius: 3,
-        ...dotGridHeroSx,
-        border: `1px solid ${miui.border}`,
-        boxShadow: "none",
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 2,
-          flexWrap: "wrap",
-        }}
-      >
-        <Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <PsychologyRoundedIcon sx={{ color: bc.accent, fontSize: 26 }} />
-            <Typography
-              variant="h5"
-              sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, letterSpacing: "-0.02em" }}
-            >
-              Brain Cache
+  const shellSx = {
+    mb: 1.5,
+    p: embedded ? 0 : 1.5,
+    borderRadius: embedded ? 0 : 3,
+    ...(embedded ? {} : dotGridHeroSx),
+    border: embedded ? "none" : `1px solid ${miui.border}`,
+    boxShadow: "none",
+    bgcolor: embedded ? "transparent" : undefined,
+  } as const;
+
+  const body = (
+    <>
+      {!embedded && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <PsychologyRoundedIcon sx={{ color: bc.accent, fontSize: 26 }} />
+              <Typography
+                variant="h5"
+                sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, letterSpacing: "-0.02em" }}
+              >
+                Brain Cache
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 520 }}>
+              Spaced-repetition playlists — pick a list below, open any problem, and keep your retention on track.
             </Typography>
           </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 520 }}>
-            Spaced-repetition playlists — pick a list below, open any problem, and keep your retention on track.
-          </Typography>
+          {onNewPlaylist && (
+            <Button
+              variant="contained"
+              className="solve-btn btn-primary"
+              startIcon={<AddRoundedIcon />}
+              onClick={onNewPlaylist}
+            >
+              New playlist
+            </Button>
+          )}
         </Box>
-        <Button
-          variant="contained"
-          className="solve-btn btn-primary"
-          startIcon={<AddRoundedIcon />}
-          onClick={onNewPlaylist}
-        >
-          New playlist
-        </Button>
-      </Box>
+      )}
 
       {!loading && stats ? (
         <>
-          <Grid container spacing={1.25} sx={{ mt: 2, pt: 2, borderTop: `1px solid ${miui.border}` }}>
+          <Grid
+            container
+            spacing={1.25}
+            sx={{
+              mt: embedded ? 0 : 2,
+              pt: embedded ? 0 : 2,
+              borderTop: embedded ? "none" : `1px solid ${miui.border}`,
+            }}
+          >
             {METRICS.map((m, index) => (
               <Grid key={m.key} size={{ xs: 6, sm: 3 }}>
                 <FadeInCard delay={index * 0.08} className="card">
@@ -103,7 +120,7 @@ export function BrainCacheHero({ stats, loading = false, onNewPlaylist }: BrainC
                         ...monoStatSx,
                         fontSize: "1.375rem",
                         fontWeight: 700,
-                        color: m.key === "revisionStreakDays" && streak > 0 ? miui.ember : m.color,
+                        color: m.key === "revisionStreakDays" && streak > 0 ? miui.warning : m.color,
                         lineHeight: 1.1,
                       }}
                     >
@@ -123,7 +140,7 @@ export function BrainCacheHero({ stats, loading = false, onNewPlaylist }: BrainC
                   30-day revision completion
                 </Typography>
               </Box>
-              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: bc.accent }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800, color: miui.text }}>
                 {completionPct}%
               </Typography>
             </Box>
@@ -143,6 +160,16 @@ export function BrainCacheHero({ stats, loading = false, onNewPlaylist }: BrainC
           </Box>
         </>
       ) : null}
+    </>
+  );
+
+  if (embedded) {
+    return <Box sx={shellSx}>{body}</Box>;
+  }
+
+  return (
+    <AnimatedBanner accent={bc.accent} accentSecondary={miui.primary} subtle sx={shellSx}>
+      {body}
     </AnimatedBanner>
   );
 }

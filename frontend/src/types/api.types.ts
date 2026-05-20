@@ -19,9 +19,15 @@ export type ScheduleType = "DAILY_POTD" | "TOPIC" | "STUDY_PLAN";
 export type PublicUser = {
   id: string;
   email: string;
+  username: string | null;
   name: string | null;
+  fullName: string | null;
+  country: string | null;
+  gender: "MALE" | "FEMALE" | "NON_BINARY" | "OTHER" | "PREFER_NOT_TO_SAY" | null;
   avatar: string | null;
+  isEmailVerified: boolean;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type LoginResult = {
@@ -31,6 +37,8 @@ export type LoginResult = {
 
 export type RegisterResult = {
   user: PublicUser;
+  requiresVerification: true;
+  message: string;
 };
 
 export type ScheduleTemplate = {
@@ -254,6 +262,7 @@ export type SubmissionActivitySummary = {
   availableYears: number[];
   totalSubmissions: number;
   activeDays: number;
+  currentStreak: number;
   maxStreak: number;
   days: ActivityDay[];
 };
@@ -282,4 +291,21 @@ export type SubmissionDetailResponse = {
     exitCode: number | null;
     updatedAt: string;
   };
+};
+
+export type LeaderboardEntry = {
+  rank: number;
+  userId: string;
+  displayName: string;
+  avatarUrl: string | null;
+  avatarSeed: string;
+  problemsSolved: number;
+  acceptedSubmissions: number;
+  isCurrentUser: boolean;
+};
+
+export type LeaderboardResponse = {
+  totalUsers: number;
+  entries: LeaderboardEntry[];
+  currentUserRank: number | null;
 };

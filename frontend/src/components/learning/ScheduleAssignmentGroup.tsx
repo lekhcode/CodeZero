@@ -37,7 +37,7 @@ export function ScheduleAssignmentGroup({
                 width: 6,
                 height: 6,
                 borderRadius: "2px",
-                bgcolor: miui.ember,
+                bgcolor: miui.accent,
                 flexShrink: 0,
               }}
             />
@@ -72,9 +72,9 @@ export function ScheduleAssignmentGroup({
                   color: miui.textMuted,
                 }
               : {
-                  bgcolor: miui.emberSoft,
-                  border: `1px solid ${miui.emberBorder}`,
-                  color: miui.ember,
+                  bgcolor: miui.accentSoft,
+                  border: `1px solid ${miui.accentBorder}`,
+                  color: miui.accent,
                 }),
           }}
         >

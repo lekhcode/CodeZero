@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { PageContainer } from "@/components/ui/PageContainer";
+import { FixedPageShell, ScrollRegion } from "@/components/layout/FixedPageShell";
 import { LabSection } from "@/components/learning/LabSection";
 import { ProblemCatalogFilters } from "@/components/problems/ProblemCatalogFilters";
 import { ProblemCatalogInfiniteList } from "@/components/problems/ProblemCatalogInfiniteList";
@@ -14,7 +14,7 @@ import type { CatalogFilterState } from "@/hooks/useProblemCatalogInfinite";
 import type { DifficultyLevel } from "@/types/api.types";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { miui, monoStatSx } from "@/theme/theme";
-import { staggerContainer, staggerItem, transitionFast } from "@/theme/motion";
+import { transitionFast } from "@/theme/motion";
 
 const PAGE_SIZE = 50;
 
@@ -88,83 +88,73 @@ export function LabPage() {
     ) : null;
 
   return (
-    <PageContainer sx={{ maxWidth: 1200 }}>
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={transitionFast}>
-        <Typography
-          variant="h5"
-          sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: "1.75rem", mb: 2 }}
-        >
+    <FixedPageShell>
+      <Box sx={{ flexShrink: 0, mb: 1, minWidth: 0 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
           Problem library
         </Typography>
-      </motion.div>
-
-      <Box
-        component={motion.div}
-        variants={staggerContainer}
-        initial="hidden"
-        animate="show"
-        sx={{ mb: 2, display: "flex", flexDirection: "column", gap: 2 }}
-      >
-        <Box component={motion.div} variants={staggerItem}>
-        <ProblemCatalogStatsBar
-          stats={statsQuery.data}
-          loading={statsQuery.isLoading}
-          difficulty={difficulty}
-          onDifficultyChange={setDifficulty}
-          filteredTotal={filteredTotalQuery.data?.total}
-        />
-        </Box>
-
-        <Box component={motion.div} variants={staggerItem}>
-        <ProblemCatalogFilters
-          search={searchInput}
-          onSearchChange={setSearchInput}
-          difficulty={difficulty}
-          onDifficultyChange={setDifficulty}
-          includePremium={includePremium}
-          onIncludePremiumChange={setIncludePremium}
-        />
-        </Box>
-
-        <Box
-          component={motion.div}
-          variants={staggerItem}
-          sx={{
-            px: 0.5,
-            py: 1.5,
-            borderTop: `1px solid ${miui.border}`,
-            borderBottom: `1px solid ${miui.border}`,
-          }}
-        >
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", mb: 1, display: "block" }}
-          >
-            Topics
-          </Typography>
-          <ProblemTopicTagBar
-            topicTags={topicsQuery.data?.topicTags ?? []}
-            selected={topics}
-            onToggle={toggleTopic}
-            loading={topicsQuery.isLoading}
-          />
-        </Box>
+        <Typography variant="caption" color="text.secondary">
+          Search, filter, and solve from the full catalog
+        </Typography>
       </Box>
 
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...transitionFast, delay: 0.12 }}
-      >
-        <LabSection title="Problems" action={solvedLabel}>
-          <ProblemCatalogInfiniteList
-            filters={catalogFilters}
-            pageSize={PAGE_SIZE}
-            onListStats={setListStats}
+      <ScrollRegion sx={{ pb: 0.5 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <ProblemCatalogStatsBar
+            stats={statsQuery.data}
+            loading={statsQuery.isLoading}
+            difficulty={difficulty}
+            onDifficultyChange={setDifficulty}
+            filteredTotal={filteredTotalQuery.data?.total}
           />
-        </LabSection>
-      </motion.div>
-    </PageContainer>
+
+          <ProblemCatalogFilters
+            search={searchInput}
+            onSearchChange={setSearchInput}
+            difficulty={difficulty}
+            onDifficultyChange={setDifficulty}
+            includePremium={includePremium}
+            onIncludePremiumChange={setIncludePremium}
+          />
+
+          <Box
+            sx={{
+              px: 0.5,
+              py: 1,
+              borderTop: `1px solid ${miui.border}`,
+              borderBottom: `1px solid ${miui.border}`,
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", mb: 1, display: "block" }}
+            >
+              Topics
+            </Typography>
+            <ProblemTopicTagBar
+              topicTags={topicsQuery.data?.topicTags ?? []}
+              selected={topics}
+              onToggle={toggleTopic}
+              loading={topicsQuery.isLoading}
+            />
+          </Box>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={transitionFast}
+          >
+            <LabSection title="Problems" action={solvedLabel}>
+              <ProblemCatalogInfiniteList
+                filters={catalogFilters}
+                pageSize={PAGE_SIZE}
+                onListStats={setListStats}
+              />
+            </LabSection>
+          </motion.div>
+        </Box>
+      </ScrollRegion>
+    </FixedPageShell>
   );
 }

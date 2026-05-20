@@ -19,9 +19,10 @@ export function CodeZeroBrandLink({
   return (
     <Box
       component={Link}
-      to="/dashboard"
+      to="/community"
       onClick={onClick}
-      aria-label="CodeZero — dashboard"
+      className="zero-mark-spin-host"
+      aria-label="CodeZero — community"
       sx={{
         display: "inline-flex",
         alignItems: "center",

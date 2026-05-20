@@ -1,4 +1,4 @@
-import { Box, Typography, alpha, type SxProps, type Theme } from "@mui/material";
+import { Box, Typography, type SxProps, type Theme } from "@mui/material";
 import { CodeZeroMark } from "./CodeZeroMark";
 import { miui } from "@/theme/theme";
 
@@ -28,7 +28,7 @@ export function CodeZeroLogo({ size = 36, compact = false, sx }: CodeZeroLogoPro
           component="span"
           aria-hidden
           sx={{
-            fontFamily: '"JetBrains Mono", "Cascadia Code", "SF Mono", Consolas, monospace',
+            fontFamily: "var(--font-number)",
             fontWeight: 800,
             fontSize: `${fontSize}rem`,
             letterSpacing: "-0.04em",
@@ -39,7 +39,7 @@ export function CodeZeroLogo({ size = 36, compact = false, sx }: CodeZeroLogoPro
           <Box component="span" sx={{ color: miui.text }}>
             c
           </Box>
-          <Box component="span" sx={{ color: miui.primary, mx: 0.02 }}>
+          <Box component="span" sx={{ color: miui.textMuted, mx: 0.02 }}>
             {"<>"}
           </Box>
           <Box component="span" sx={{ color: miui.text }}>
@@ -49,6 +49,7 @@ export function CodeZeroLogo({ size = 36, compact = false, sx }: CodeZeroLogoPro
       )}
 
       <Box
+        className="zero-mark-spin-host"
         sx={{
           display: "flex",
           alignItems: "center",
@@ -58,11 +59,14 @@ export function CodeZeroLogo({ size = 36, compact = false, sx }: CodeZeroLogoPro
           minWidth: markSize + pad * 2,
           ml: compact ? 0 : -0.15,
           borderRadius: 2,
-          bgcolor: miui.primary,
-          boxShadow: `0 0 16px ${alpha(miui.primary, 0.45)}, 0 0 32px ${alpha(miui.primary, 0.15)}`,
+          bgcolor: miui.elevated,
+          border: `1px solid ${miui.brandOrangeBorder}`,
+          boxShadow: `0 0 14px ${miui.brandOrangeSoft}`,
         }}
       >
-        <CodeZeroMark size={markSize * 0.88} />
+        <Box className="zero-mark-spin-target" sx={{ display: "flex", lineHeight: 0 }}>
+          <CodeZeroMark size={markSize * 0.88} />
+        </Box>
       </Box>
     </Box>
   );

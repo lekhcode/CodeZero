@@ -1,14 +1,19 @@
 import type { Request, Response } from "express";
 import { ApiResponse } from "../../utils/ApiResponse.js";
-import type { GoogleAuthBody, LoginBody, RegisterBody } from "./auth.validation.js";
+import { ApiError } from "../../utils/ApiError.js";
+import type {
+  ChangePasswordConfirmBody,
+  ForgotPasswordBody,
+  GoogleAuthBody,
+  LoginBody,
+  RegisterBody,
+  ResendOtpBody,
+  ResetPasswordBody,
+  VerifyEmailBody,
+} from "./auth.validation.js";
 import * as authService from "./auth.service.js";
 import * as authOAuthService from "./auth.oauth.service.js";
 import { env } from "../../config/env.js";
-
-/**
- * HTTP adapters only: parse validated body from middleware, call service, shape response.
- * Business rules live in `auth.service.ts` for reuse (CLI jobs, queues, MCP tools later).
- */
 
 export async function register(req: Request, res: Response): Promise<void> {
   const body = req.body as RegisterBody;
@@ -16,10 +21,56 @@ export async function register(req: Request, res: Response): Promise<void> {
   ApiResponse.created(res, result);
 }
 
+export async function verifyEmail(req: Request, res: Response): Promise<void> {
+  const body = req.body as VerifyEmailBody;
+  const result = await authService.verifyEmail(body);
+  ApiResponse.success(res, result);
+}
+
+export async function resendOtp(req: Request, res: Response): Promise<void> {
+  const body = req.body as ResendOtpBody;
+  const result = await authService.resendVerificationOtp(body);
+  ApiResponse.success(res, result);
+}
+
 export async function login(req: Request, res: Response): Promise<void> {
   const body = req.body as LoginBody;
   const result = await authService.loginUser(body);
   ApiResponse.success(res, result);
+}
+
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+  const body = req.body as ForgotPasswordBody;
+  const result = await authService.forgotPassword(body);
+  ApiResponse.success(res, result);
+}
+
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  const body = req.body as ResetPasswordBody;
+  const result = await authService.resetPassword(body);
+  ApiResponse.success(res, result);
+}
+
+export async function requestChangePasswordOtp(req: Request, res: Response): Promise<void> {
+  const authed = req.user;
+  if (authed === undefined) throw ApiError.unauthorized("Not authenticated");
+  const result = await authService.requestChangePasswordOtp(authed.id);
+  ApiResponse.success(res, result);
+}
+
+export async function confirmChangePassword(req: Request, res: Response): Promise<void> {
+  const authed = req.user;
+  if (authed === undefined) throw ApiError.unauthorized("Not authenticated");
+  const body = req.body as ChangePasswordConfirmBody;
+  const result = await authService.confirmChangePassword(authed.id, body);
+  ApiResponse.success(res, result);
+}
+
+export async function logout(req: Request, res: Response): Promise<void> {
+  const authed = req.user;
+  if (authed === undefined) throw ApiError.unauthorized("Not authenticated");
+  await authService.logoutUser(authed.id);
+  ApiResponse.success(res, { message: "Signed out" });
 }
 
 export async function googleAuth(req: Request, res: Response): Promise<void> {

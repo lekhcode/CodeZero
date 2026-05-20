@@ -31,5 +31,9 @@ export function AnimatedNumber({ value, duration = 600, className }: AnimatedNum
     requestAnimationFrame(tick);
   }, [value, duration]);
 
-  return <span className={className}>{display.toLocaleString()}</span>;
+  return (
+    <span className={className ? `font-num ${className}` : "font-num"}>
+      {display.toLocaleString()}
+    </span>
+  );
 }

@@ -18,7 +18,7 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { miui } from "@/theme/theme";
 
 const metaBadgeSx = {
-  fontFamily: '"JetBrains Mono", monospace',
+  fontFamily: "var(--font-number)",
   fontSize: "11px",
   fontWeight: 400,
   textTransform: "uppercase" as const,

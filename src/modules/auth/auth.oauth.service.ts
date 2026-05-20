@@ -3,8 +3,10 @@ import { OAuth2Client } from "google-auth-library";
 import { prisma } from "../../config/prisma.js";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../utils/ApiError.js";
-import type { LoginResult, PublicUser } from "./auth.types.js";
+import type { LoginResult } from "./auth.types.js";
 import { establishUserSession } from "./auth.service.js";
+import { toPublicUser, USER_PUBLIC_SELECT } from "./auth.user.js";
+import { generateUniqueUsername, usernameBaseFromEmail } from "../../utils/username.js";
 
 type GoogleProfile = {
   email: string;
@@ -20,22 +22,6 @@ type GithubProfile = {
   githubId: string;
 };
 
-function toPublicUser(row: {
-  id: string;
-  email: string;
-  name: string | null;
-  avatar: string | null;
-  createdAt: Date;
-}): PublicUser {
-  return {
-    id: row.id,
-    email: row.email,
-    name: row.name,
-    avatar: row.avatar,
-    createdAt: row.createdAt,
-  };
-}
-
 async function findOrCreateOAuthUser(profile: {
   email: string;
   name: string | null;
@@ -49,11 +35,7 @@ async function findOrCreateOAuthUser(profile: {
   let user = await prisma.user.findUnique({
     where: { email },
     select: {
-      id: true,
-      email: true,
-      name: true,
-      avatar: true,
-      createdAt: true,
+      ...USER_PUBLIC_SELECT,
       googleId: true,
       githubId: true,
       provider: true,
@@ -61,6 +43,7 @@ async function findOrCreateOAuthUser(profile: {
   });
 
   if (user === null) {
+    const username = await generateUniqueUsername(usernameBaseFromEmail(email));
     try {
       const created = await prisma.user.create({
         data: {
@@ -71,14 +54,10 @@ async function findOrCreateOAuthUser(profile: {
           password: null,
           googleId: profile.googleId ?? null,
           githubId: profile.githubId ?? null,
+          username,
+          isEmailVerified: true,
         },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          avatar: true,
-          createdAt: true,
-        },
+        select: USER_PUBLIC_SELECT,
       });
       return establishUserSession(toPublicUser(created));
     } catch (err) {
@@ -86,11 +65,7 @@ async function findOrCreateOAuthUser(profile: {
         user = await prisma.user.findUnique({
           where: { email },
           select: {
-            id: true,
-            email: true,
-            name: true,
-            avatar: true,
-            createdAt: true,
+            ...USER_PUBLIC_SELECT,
             googleId: true,
             githubId: true,
             provider: true,
@@ -114,18 +89,16 @@ async function findOrCreateOAuthUser(profile: {
   if (user.provider === AuthProvider.EMAIL && profile.provider !== AuthProvider.EMAIL) {
     updates.provider = profile.provider;
   }
+  if (!user.isEmailVerified) updates.isEmailVerified = true;
+  if (!user.username) {
+    updates.username = await generateUniqueUsername(usernameBaseFromEmail(email));
+  }
 
   if (Object.keys(updates).length > 0) {
     const updated = await prisma.user.update({
       where: { id: user.id },
       data: updates,
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        avatar: true,
-        createdAt: true,
-      },
+      select: USER_PUBLIC_SELECT,
     });
     return establishUserSession(toPublicUser(updated));
   }

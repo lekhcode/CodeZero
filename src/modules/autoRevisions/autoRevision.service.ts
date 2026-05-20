@@ -3,7 +3,6 @@ import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../utils/ApiError.js";
 import {
   computeRevisionSchedules,
-  isWeeklyDueOnDate,
   monthRangeForOffset,
   toDateKey,
   weekRangeForOffset,
@@ -47,10 +46,6 @@ function mapRow(row: AutoRevisionRow): AutoRevisionDto {
     isRevised: row.isRevised,
     revisedAt: row.revisedAt?.toISOString() ?? null,
   };
-}
-
-function dateKeyFromDb(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }
 
 export type LogAutoRevisionInput = {
@@ -156,29 +151,14 @@ export async function getTodayRevisions(
 ): Promise<AutoRevisionGroupedToday> {
   const timeZone = resolveTimezone(timezone);
   const todayKey = toDateKey(new Date(), timeZone);
-  const rows = await fetchRows(userId, {});
 
-  const daily: AutoRevisionDto[] = [];
-  const weekly: AutoRevisionDto[] = [];
-  const monthly: AutoRevisionDto[] = [];
+  /** Yesterday's solve → due today (D+1). Weekly/monthly live in their own buckets. */
+  const daily = await fetchRows(userId, {
+    revisionType: AutoRevisionType.DAILY,
+    scheduledFor: new Date(`${todayKey}T00:00:00.000Z`),
+  });
 
-  for (const row of rows) {
-    const sched = row.scheduledFor;
-    let dueToday = false;
-    if (row.revisionType === AutoRevisionType.DAILY) {
-      dueToday = sched === todayKey;
-    } else if (row.revisionType === AutoRevisionType.WEEKLY) {
-      dueToday = isWeeklyDueOnDate(sched, todayKey, timeZone);
-    } else if (row.revisionType === AutoRevisionType.MONTHLY) {
-      dueToday = sched === todayKey;
-    }
-    if (!dueToday) continue;
-    if (row.revisionType === AutoRevisionType.DAILY) daily.push(row);
-    else if (row.revisionType === AutoRevisionType.WEEKLY) weekly.push(row);
-    else monthly.push(row);
-  }
-
-  return { daily, weekly, monthly };
+  return { daily, weekly: [], monthly: [] };
 }
 
 export async function getWeekRevisions(
@@ -191,6 +171,7 @@ export async function getWeekRevisions(
   const rows = await prisma.autoRevision.findMany({
     where: {
       userId,
+      revisionType: AutoRevisionType.WEEKLY,
       scheduledFor: {
         gte: new Date(`${range.start}T00:00:00.000Z`),
         lte: new Date(`${range.end}T00:00:00.000Z`),
@@ -223,6 +204,7 @@ export async function getMonthRevisions(
   const rows = await prisma.autoRevision.findMany({
     where: {
       userId,
+      revisionType: AutoRevisionType.MONTHLY,
       scheduledFor: {
         gte: new Date(`${range.start}T00:00:00.000Z`),
         lte: new Date(`${range.end}T00:00:00.000Z`),
@@ -271,15 +253,20 @@ export async function getAutoRevisionSummary(
   const week = weekRangeForOffset(0, timeZone);
   const month = monthRangeForOffset(0, timeZone);
 
-  const [allOpen, weekRows, monthRows] = await Promise.all([
-    prisma.autoRevision.findMany({
-      where: { userId, isRevised: false },
-      select: { revisionType: true, scheduledFor: true },
+  const [todayPending, weekPending, monthPending] = await Promise.all([
+    prisma.autoRevision.count({
+      where: {
+        userId,
+        isRevised: false,
+        revisionType: AutoRevisionType.DAILY,
+        scheduledFor: new Date(`${todayKey}T00:00:00.000Z`),
+      },
     }),
     prisma.autoRevision.count({
       where: {
         userId,
         isRevised: false,
+        revisionType: AutoRevisionType.WEEKLY,
         scheduledFor: {
           gte: new Date(`${week.start}T00:00:00.000Z`),
           lte: new Date(`${week.end}T00:00:00.000Z`),
@@ -290,6 +277,7 @@ export async function getAutoRevisionSummary(
       where: {
         userId,
         isRevised: false,
+        revisionType: AutoRevisionType.MONTHLY,
         scheduledFor: {
           gte: new Date(`${month.start}T00:00:00.000Z`),
           lte: new Date(`${month.end}T00:00:00.000Z`),
@@ -298,18 +286,9 @@ export async function getAutoRevisionSummary(
     }),
   ]);
 
-  let todayPending = 0;
-  for (const row of allOpen) {
-    const sched = dateKeyFromDb(row.scheduledFor);
-    if (row.revisionType === AutoRevisionType.DAILY && sched === todayKey) todayPending += 1;
-    else if (row.revisionType === AutoRevisionType.WEEKLY && isWeeklyDueOnDate(sched, todayKey, timeZone)) {
-      todayPending += 1;
-    } else if (row.revisionType === AutoRevisionType.MONTHLY && sched === todayKey) todayPending += 1;
-  }
-
   return {
     todayPending,
-    weekPending: weekRows,
-    monthPending: monthRows,
+    weekPending,
+    monthPending,
   };
 }

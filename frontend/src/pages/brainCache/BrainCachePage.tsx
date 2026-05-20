@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Badge, Box, Button } from "@mui/material";
+import { Badge, Box, Button, Stack, Typography } from "@mui/material";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { PageContainer } from "@/components/ui/PageContainer";
+import { FixedPageShell, ScrollRegion } from "@/components/layout/FixedPageShell";
 import { SectionCard } from "@/components/ui/SectionCard";
 import { BrainCacheHero } from "@/components/brainCache/BrainCacheHero";
 import { BrainCachePlaylistExplorer } from "@/components/brainCache/BrainCachePlaylistExplorer";
@@ -19,7 +20,7 @@ import {
 } from "@/hooks/queryKeys";
 import { getUtcDateKey } from "@/utils/date";
 import { getClientTimezone } from "@/utils/timezone";
-import { dashNavTabSx, sectionContentSx } from "@/theme/theme";
+import { dashNavTabSx, miui, sectionContentSx } from "@/theme/theme";
 
 type BrainCacheSection = "playlists" | "smart";
 
@@ -92,16 +93,46 @@ export function BrainCachePage() {
   const smartPending = smartSummaryQuery.data?.todayPending ?? 0;
 
   return (
-    <PageContainer sx={{ maxWidth: 1200 }}>
-      <BrainCacheHero
-        stats={analyticsQuery.data}
-        loading={analyticsQuery.isLoading}
-        onNewPlaylist={() => setCreateOpen(true)}
-      />
-
-      <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
+    <FixedPageShell>
+      <Box
+        sx={{
+          flexShrink: 0,
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 1,
+          mb: 1,
+          minWidth: 0,
+        }}
+      >
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+            Brain Cache
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Spaced-repetition playlists and revision queue
+          </Typography>
+        </Box>
         <Button
-          variant={section === "playlists" ? "contained" : "outlined"}
+          variant="contained"
+          size="small"
+          className="solve-btn btn-primary"
+          startIcon={<AddRoundedIcon sx={{ fontSize: 18 }} />}
+          onClick={() => setCreateOpen(true)}
+          sx={{ flexShrink: 0, textTransform: "none", fontWeight: 600 }}
+        >
+          New playlist
+        </Button>
+      </Box>
+
+      <Stack
+        direction="row"
+        spacing={0.5}
+        sx={{ flexShrink: 0, mb: 1.5, borderBottom: `1px solid ${miui.border}` }}
+      >
+        <Button
+          variant="text"
+          size="small"
           onClick={() => setSection("playlists")}
           sx={dashNavTabSx(section === "playlists")}
         >
@@ -111,53 +142,58 @@ export function BrainCachePage() {
           color="error"
           variant="dot"
           invisible={smartPending <= 0}
-          sx={{ "& .MuiBadge-badge": { right: 6, top: 6 } }}
+          sx={{ "& .MuiBadge-badge": { right: 4, top: 4 } }}
         >
           <Button
-            variant={section === "smart" ? "contained" : "outlined"}
+            variant="text"
+            size="small"
             onClick={() => setSection("smart")}
             sx={dashNavTabSx(section === "smart")}
           >
             Smart Revisions
           </Button>
         </Badge>
-      </Box>
+      </Stack>
 
-      {section === "smart" ? (
-        <SmartRevisionsTab />
-      ) : (
-        <>
-          <SectionCard title="Your playlists" bodySx={{ ...sectionContentSx, pt: 1.5, pb: 1.5 }}>
-            <BrainCachePlaylistExplorer
-              playlists={playlists}
-              loading={playlistsQuery.isLoading}
-              onDelete={(id) => deleteMutation.mutate(id)}
-              deleting={deleteMutation.isPending}
+      <ScrollRegion sx={{ pb: 0.5 }}>
+        <BrainCacheHero stats={analyticsQuery.data} loading={analyticsQuery.isLoading} embedded />
+
+        {section === "smart" ? (
+          <SmartRevisionsTab />
+        ) : (
+          <>
+            <SectionCard title="Your playlists" bodySx={{ ...sectionContentSx, pt: 1.5, pb: 1.5 }}>
+              <BrainCachePlaylistExplorer
+                playlists={playlists}
+                loading={playlistsQuery.isLoading}
+                onDelete={(id) => deleteMutation.mutate(id)}
+                deleting={deleteMutation.isPending}
+              />
+            </SectionCard>
+
+            <BrainCacheRevisionsPanel
+              variant="today"
+              title="Today's revisions"
+              tasks={todayQuery.data ?? []}
+              onComplete={(id) => revisionMutation.mutate({ id, action: "complete" })}
+              onSkip={(id) => revisionMutation.mutate({ id, action: "skip" })}
+              busy={busy}
+              emptyMessage="Nothing due — you've earned rest."
             />
-          </SectionCard>
 
-          <BrainCacheRevisionsPanel
-            variant="today"
-            title="Today's revisions"
-            tasks={todayQuery.data ?? []}
-            onComplete={(id) => revisionMutation.mutate({ id, action: "complete" })}
-            onSkip={(id) => revisionMutation.mutate({ id, action: "skip" })}
-            busy={busy}
-            emptyMessage="Nothing due — you've earned rest."
-          />
-
-          <BrainCacheRevisionsPanel
-            variant="overdue"
-            title="Overdue revisions"
-            tasks={overdueQuery.data ?? []}
-            onComplete={(id) => revisionMutation.mutate({ id, action: "complete" })}
-            onSkip={(id) => revisionMutation.mutate({ id, action: "skip" })}
-            busy={busy}
-            paginateByDay
-            emptyMessage="Backlog clear. Discipline is showing."
-          />
-        </>
-      )}
+            <BrainCacheRevisionsPanel
+              variant="overdue"
+              title="Overdue revisions"
+              tasks={overdueQuery.data ?? []}
+              onComplete={(id) => revisionMutation.mutate({ id, action: "complete" })}
+              onSkip={(id) => revisionMutation.mutate({ id, action: "skip" })}
+              busy={busy}
+              paginateByDay
+              emptyMessage="Backlog clear. Discipline is showing."
+            />
+          </>
+        )}
+      </ScrollRegion>
 
       <BrainCachePlaylistDialog
         open={createOpen}
@@ -165,6 +201,6 @@ export function BrainCachePage() {
         loading={createMutation.isPending}
         onSubmit={(v) => createMutation.mutate({ name: v.name, revisionIntervalDays: v.revisionIntervalDays })}
       />
-    </PageContainer>
+    </FixedPageShell>
   );
 }

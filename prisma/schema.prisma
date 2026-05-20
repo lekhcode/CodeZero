@@ -82,22 +82,44 @@ enum AuthProvider {
   GITHUB
 }
 
+enum EmailOtpType {
+  VERIFY_EMAIL
+  RESET_PASSWORD
+  CHANGE_PASSWORD
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  NON_BINARY
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
+  /** Unique handle — lowercase alphanumeric + underscores */
+  username  String?  @unique
   name      String?
+  fullName  String?
+  country   String?
+  gender    Gender?
   avatar    String?
   provider  AuthProvider @default(EMAIL)
   googleId  String?  @unique
   githubId  String?  @unique
   /** bcrypt hash — null for OAuth-only accounts */
   password  String?
+  isEmailVerified    Boolean  @default(false)
   /**
    * Last issued access JWT (single session). `requireAuth` checks Bearer token === this value.
    */
   currentAccessToken String? @db.Text
   createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
+  emailOtps            EmailOtp[]
   userSchedules        UserSchedule[]
   compilerSubmissions  CompilerSubmission[]
   judgeSubmissions     JudgeSubmission[]
@@ -106,8 +128,27 @@ model User {
   brainCachePlaylists  BrainCachePlaylist[]
   brainCacheRevisionTasks BrainCacheRevisionTask[]
   autoRevisions        AutoRevision[]
+  forumPosts           ForumPost[]
+  forumComments        ForumComment[]
+  forumPostLikes       ForumPostLike[]
+  forumCommentLikes    ForumCommentLike[]
 
   @@map("users")
+}
+
+model EmailOtp {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @db.Uuid
+  otpHash   String
+  type      EmailOtpType
+  expiresAt DateTime
+  attempts  Int          @default(0)
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, createdAt(sort: Desc)])
+  @@map("email_otps")
 }
 
 // ---------------------------------------------------------------------------
@@ -278,6 +319,7 @@ model Problem {
   judgeSubmissions   JudgeSubmission[]
   userSolves         UserProblemSolve[]
   assignments        Assignment[]
+  forumPosts         ForumPost[]
   brainCacheEntries  BrainCachePlaylistProblem[]
   brainCacheTasks    BrainCacheRevisionTask[]
   autoRevisions      AutoRevision[]
@@ -471,4 +513,90 @@ model DailyPotd {
 
   @@index([problemId])
   @@map("daily_potd")
+}
+
+// ---------------------------------------------------------------------------
+// Community forum — text/link discussions (no media uploads in v1).
+// ---------------------------------------------------------------------------
+
+enum ForumPostType {
+  DISCUSSION
+  QUESTION
+  RESOURCE
+  GUIDE
+  INTERVIEW_EXPERIENCE
+}
+
+model ForumPost {
+  id           String        @id @default(uuid()) @db.Uuid
+  authorId     String        @db.Uuid
+  title        String
+  content      String        @db.Text
+  externalLink String?
+  type         ForumPostType
+  likeCount    Int           @default(0)
+  commentCount Int           @default(0)
+  /** Future: problem-specific discuss threads (optional FK, not exposed in UI yet). */
+  problemId    String?       @db.Uuid
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  author   User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  problem  Problem?        @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  comments ForumComment[]
+  likes    ForumPostLike[]
+
+  @@index([createdAt(sort: Desc)])
+  @@index([authorId])
+  @@index([type])
+  @@index([problemId])
+  @@index([likeCount(sort: Desc), createdAt(sort: Desc)])
+  @@map("forum_posts")
+}
+
+model ForumComment {
+  id        String   @id @default(uuid()) @db.Uuid
+  postId    String   @db.Uuid
+  authorId  String   @db.Uuid
+  content   String   @db.Text
+  parentId  String?  @db.Uuid
+  likeCount Int      @default(0)
+  createdAt DateTime @default(now())
+
+  post     ForumPost         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author   User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent   ForumComment?     @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  ForumComment[]    @relation("CommentReplies")
+  likes    ForumCommentLike[]
+
+  @@index([postId, createdAt])
+  @@index([authorId])
+  @@index([parentId])
+  @@map("forum_comments")
+}
+
+model ForumPostLike {
+  userId    String   @db.Uuid
+  postId    String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post ForumPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@index([postId])
+  @@map("forum_post_likes")
+}
+
+model ForumCommentLike {
+  userId    String   @db.Uuid
+  commentId String   @db.Uuid
+  createdAt DateTime @default(now())
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment ForumComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+  @@index([commentId])
+  @@map("forum_comment_likes")
 }

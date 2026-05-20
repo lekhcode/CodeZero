@@ -20,8 +20,9 @@ export function PageContainer({ children, fixed = false, sx, ...props }: PageCon
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          px: { xs: 2, sm: 3 },
-          py: { xs: 2, sm: 2.5 },
+          px: { xs: 1.5, sm: 2 },
+          py: { xs: 1.25, sm: 1.5 },
+          fontSize: "0.875rem",
           maxWidth: "100%",
           width: "100%",
           ...sx,
@@ -45,6 +46,7 @@ export function PageContainer({ children, fixed = false, sx, ...props }: PageCon
     >
       <MotionFadeIn>
         <Box
+          className="app-scroll"
           sx={{
             height: "100%",
             flex: 1,
@@ -52,9 +54,10 @@ export function PageContainer({ children, fixed = false, sx, ...props }: PageCon
             overflow: "auto",
             overflowX: "hidden",
             WebkitOverflowScrolling: "touch",
-            px: { xs: 2, sm: 3 },
-            py: { xs: 2, sm: 3 },
-            maxWidth: 1280,
+            px: { xs: 1.5, sm: 2 },
+            py: { xs: 1.25, sm: 1.75 },
+            maxWidth: 1200,
+            fontSize: "0.875rem",
             mx: "auto",
             width: "100%",
             ...sx,

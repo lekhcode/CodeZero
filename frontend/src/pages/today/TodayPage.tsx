@@ -129,7 +129,7 @@ export function TodayPage() {
       <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 0.5, mb: 1, minWidth: 0 }}>
         <Button
           component={RouterLink}
-          to="/dashboard"
+          to="/community"
           size="small"
           sx={{ minWidth: 0, px: 1, color: "text.secondary", flexShrink: 0 }}
         >
@@ -317,7 +317,7 @@ export function TodayPage() {
                 >
                   <Typography
                     sx={{
-                      fontFamily: '"JetBrains Mono", monospace',
+                      fontFamily: "var(--font-number)",
                       fontSize: "11px",
                       fontWeight: 400,
                       color: miui.danger,

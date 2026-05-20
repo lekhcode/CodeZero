@@ -1,5 +1,10 @@
 import { JudgeMode, SubmissionStatus } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
+import {
+  currentStreakFromActiveDays,
+  maxConsecutiveDayStreak,
+  utcDateKey,
+} from "./streak.utils.js";
 
 const ROLLING_DAY_COUNT = 365;
 
@@ -18,6 +23,9 @@ export type SubmissionActivitySummary = {
   availableYears: number[];
   totalSubmissions: number;
   activeDays: number;
+  /** Consecutive UTC days with ≥1 ACCEPTED full submit (today or yesterday if today pending). */
+  currentStreak: number;
+  /** All-time longest consecutive active-day run (never drops when a streak breaks). */
   maxStreak: number;
   days: ActivityDay[];
 };
@@ -30,45 +38,23 @@ export function localDateKey(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function startOfLocalDay(d: Date): Date {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
+function startOfUtcDay(d: Date): Date {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
-function addLocalDays(d: Date, days: number): Date {
-  const x = new Date(d);
-  x.setDate(x.getDate() + days);
-  x.setHours(0, 0, 0, 0);
+function addUtcDaysDate(d: Date, days: number): Date {
+  const x = startOfUtcDay(d);
+  x.setUTCDate(x.getUTCDate() + days);
   return x;
-}
-
-/** Longest run of consecutive calendar days in sorted ascending local date keys. */
-export function maxConsecutiveDayStreak(sortedDateKeys: string[]): number {
-  if (sortedDateKeys.length === 0) return 0;
-  let best = 1;
-  let current = 1;
-  for (let i = 1; i < sortedDateKeys.length; i++) {
-    const prev = new Date(sortedDateKeys[i - 1]!);
-    const cur = new Date(sortedDateKeys[i]!);
-    const diffDays = Math.round((cur.getTime() - prev.getTime()) / (24 * 60 * 60 * 1000));
-    if (diffDays === 1) {
-      current++;
-    } else {
-      current = 1;
-    }
-    if (current > best) best = current;
-  }
-  return best;
 }
 
 function buildDayRange(start: Date, end: Date): string[] {
   const keys: string[] = [];
-  const cursor = startOfLocalDay(start);
-  const endDay = startOfLocalDay(end);
+  const cursor = startOfUtcDay(start);
+  const endDay = startOfUtcDay(end);
   while (cursor.getTime() <= endDay.getTime()) {
-    keys.push(localDateKey(cursor));
-    cursor.setDate(cursor.getDate() + 1);
+    keys.push(utcDateKey(cursor));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
   return keys;
 }
@@ -99,7 +85,7 @@ export async function getSubmissionActivityForUser(
 ): Promise<SubmissionActivitySummary> {
   const availableYears = await resolveAvailableYears(userId);
   const currentYear = new Date().getFullYear();
-  const today = startOfLocalDay(new Date());
+  const today = startOfUtcDay(new Date());
 
   const useRolling = input.rolling === true || input.year === undefined;
 
@@ -111,52 +97,69 @@ export async function getSubmissionActivityForUser(
 
   if (useRolling) {
     rangeEnd = today;
-    rangeStart = addLocalDays(today, -(ROLLING_DAY_COUNT - 1));
+    rangeStart = addUtcDaysDate(today, -(ROLLING_DAY_COUNT - 1));
     view = "rolling";
     year = null;
     rangeLabel = "Last 12 months";
   } else {
     const y = input.year !== undefined && availableYears.includes(input.year) ? input.year : currentYear;
-    rangeStart = new Date(y, 0, 1);
-    rangeEnd =
-      y === currentYear
-        ? today
-        : startOfLocalDay(new Date(y, 11, 31));
+    rangeStart = new Date(Date.UTC(y, 0, 1));
+    rangeEnd = y === currentYear ? today : startOfUtcDay(new Date(Date.UTC(y, 11, 31)));
     view = "calendar";
     year = y;
     rangeLabel = String(y);
   }
 
   const queryEnd = new Date(rangeEnd);
-  queryEnd.setHours(23, 59, 59, 999);
+  queryEnd.setUTCHours(23, 59, 59, 999);
 
-  const rows = await prisma.judgeSubmission.findMany({
-    where: {
-      userId,
-      createdAt: { gte: rangeStart, lte: queryEnd },
-    },
-    select: {
-      createdAt: true,
-      status: true,
-      mode: true,
-    },
-  });
+  const [rows, allAcceptedRows] = await Promise.all([
+    prisma.judgeSubmission.findMany({
+      where: {
+        userId,
+        createdAt: { gte: rangeStart, lte: queryEnd },
+      },
+      select: {
+        createdAt: true,
+        status: true,
+        mode: true,
+      },
+    }),
+    prisma.judgeSubmission.findMany({
+      where: {
+        userId,
+        mode: JudgeMode.FULL_JUDGE,
+        status: SubmissionStatus.ACCEPTED,
+      },
+      select: { createdAt: true },
+    }),
+  ]);
 
+  /** Per-day full Submit clicks (FULL_JUDGE) — excludes Run / sample runs. */
   const countByDate = new Map<string, number>();
-  const acceptedDays = new Set<string>();
+  const acceptedByDate = new Map<string, number>();
 
   for (const row of rows) {
-    const key = localDateKey(row.createdAt);
+    if (row.mode !== JudgeMode.FULL_JUDGE) continue;
+    const key = utcDateKey(row.createdAt);
     countByDate.set(key, (countByDate.get(key) ?? 0) + 1);
-    if (row.mode === JudgeMode.FULL_JUDGE && row.status === SubmissionStatus.ACCEPTED) {
-      acceptedDays.add(key);
+    if (row.status === SubmissionStatus.ACCEPTED) {
+      acceptedByDate.set(key, (acceptedByDate.get(key) ?? 0) + 1);
     }
   }
 
+  const allAcceptedDays = new Set<string>();
+  for (const row of allAcceptedRows) {
+    allAcceptedDays.add(utcDateKey(row.createdAt));
+  }
+  const todayKey = utcDateKey(new Date());
+  const currentStreak = currentStreakFromActiveDays(allAcceptedDays, todayKey);
+  const maxStreak = maxConsecutiveDayStreak([...allAcceptedDays].sort());
+
   let dayKeys: string[];
   if (view === "calendar" && year !== null) {
-    const gridStart = new Date(year, 0, 1);
-    const gridEnd = new Date(year, 11, 31);
+    const gridStart = new Date(Date.UTC(year, 0, 1));
+    const gridEnd = new Date(Date.UTC(year, 11, 31));
     dayKeys = buildDayRange(gridStart, gridEnd);
   } else {
     dayKeys = buildDayRange(rangeStart, rangeEnd);
@@ -165,11 +168,10 @@ export async function getSubmissionActivityForUser(
   const days: ActivityDay[] = dayKeys.map((key) => ({
     date: key,
     count: countByDate.get(key) ?? 0,
-    acceptedCount: acceptedDays.has(key) ? 1 : 0,
+    acceptedCount: acceptedByDate.get(key) ?? 0,
   }));
 
-  const activeInRange = dayKeys.filter((k) => (countByDate.get(k) ?? 0) > 0);
-  const acceptedInRange = [...acceptedDays].filter((k) => dayKeys.includes(k)).sort();
+  const activeInRange = dayKeys.filter((k) => (acceptedByDate.get(k) ?? 0) > 0);
 
   return {
     view,
@@ -178,7 +180,8 @@ export async function getSubmissionActivityForUser(
     availableYears,
     totalSubmissions: rows.length,
     activeDays: activeInRange.length,
-    maxStreak: maxConsecutiveDayStreak(acceptedInRange),
+    currentStreak,
+    maxStreak,
     days,
   };
 }

@@ -91,7 +91,7 @@ function DueItemRow({ item }: { item: DueItem }) {
             borderRadius: 0.75,
             bgcolor: status.bg,
             color: status.color,
-            fontFamily: '"JetBrains Mono", monospace',
+            fontFamily: "var(--font-number)",
           }}
         >
           {statusLabel(item)}
@@ -149,7 +149,7 @@ export function DayDetailPanel({ selectedDate, data, isLoading, isError }: DayDe
         </Typography>
       </Box>
 
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", pr: 0.5 }}>
+      <Box className="app-scroll" sx={{ flex: 1, minHeight: 0, overflowY: "auto", pr: 0.5 }}>
         {isLoading ? (
           <LoadingSkeleton variant="list" count={5} />
         ) : isError ? (

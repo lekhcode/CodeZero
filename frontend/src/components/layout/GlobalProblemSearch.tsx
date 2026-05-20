@@ -24,11 +24,11 @@ import { miui, monoStatSx } from "@/theme/theme";
 const RESULT_LIMIT = 40;
 
 const SHELL_WIDTH = {
-  xs: "min(calc(100vw - 100px), 320px)",
-  sm: 440,
-  md: 520,
-  lg: 580,
-  xl: 620,
+  xs: "min(calc(100vw - 88px), 280px)",
+  sm: 360,
+  md: 400,
+  lg: 440,
+  xl: 480,
 } as const;
 
 const panelMotion = {
@@ -127,7 +127,7 @@ export function GlobalProblemSearch() {
         sx={{
           width: "100%",
           boxSizing: "border-box",
-          borderRadius: showPanel ? "12px 12px 0 0" : "12px",
+          borderRadius: showPanel ? "8px 8px 0 0" : "8px",
           border: `1px solid ${showPanel ? miui.accentBorder : miui.border}`,
           bgcolor: showPanel ? "rgba(12, 11, 16, 0.72)" : miui.elevated,
           backdropFilter: showPanel ? "blur(12px)" : "none",
@@ -186,12 +186,13 @@ export function GlobalProblemSearch() {
               width: "100%",
               bgcolor: "transparent",
               borderRadius: 0,
-              fontSize: "0.875rem",
-              py: 0.25,
+              fontSize: "0.8125rem",
+              py: 0,
+              minHeight: 34,
               transition: "background-color 150ms ease",
               "& fieldset": { border: "none" },
-              "&:hover": { bgcolor: "rgba(255,255,255,0.02)" },
-              "&.Mui-focused": { bgcolor: "rgba(255,255,255,0.03)" },
+              "&:hover": { bgcolor: "var(--bg-hover)" },
+              "&.Mui-focused": { bgcolor: "var(--bg-active)" },
             },
           }}
         />
@@ -222,15 +223,11 @@ export function GlobalProblemSearch() {
             }}
           >
             <Box
+              className="app-scroll"
               sx={{
                 maxHeight: 300,
                 overflowY: "auto",
                 overflowX: "hidden",
-                "&::-webkit-scrollbar": { width: 6 },
-                "&::-webkit-scrollbar-thumb": {
-                  bgcolor: miui.borderStrong,
-                  borderRadius: 99,
-                },
               }}
             >
               {searchQuery.isLoading ? (

@@ -118,6 +118,7 @@ export function ProblemCatalogInfiniteList({
   return (
     <Box
       ref={scrollRootRef}
+      className="app-scroll"
       sx={{
         maxHeight,
         minHeight: compact ? 280 : 400,
@@ -127,11 +128,6 @@ export function ProblemCatalogInfiniteList({
         bgcolor: alpha(miui.bg, 0.35),
         border: `1px solid ${miui.border}`,
         WebkitOverflowScrolling: "touch",
-        "&::-webkit-scrollbar": { width: 8 },
-        "&::-webkit-scrollbar-thumb": {
-          bgcolor: alpha(miui.text, 0.15),
-          borderRadius: 4,
-        },
       }}
     >
       {table}

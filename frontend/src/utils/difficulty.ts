@@ -1,10 +1,12 @@
 import type { DifficultyLevel } from "@/types/api.types";
+import { miui } from "@/theme/theme";
 
+/** Hex values for MUI `sx` / `color` (MUI cannot parse CSS `var()`). */
 const COLORS: Record<string, string> = {
-  EASY: "#4ADE80",
-  MEDIUM: "#F6C360",
-  HARD: "#FC8181",
-  MIXED: "#9B7FEA",
+  EASY: miui.success,
+  MEDIUM: miui.caution,
+  HARD: miui.danger,
+  MIXED: miui.textMuted,
 };
 
 export function difficultyColor(difficulty: string): string {

@@ -51,6 +51,14 @@ export function WeekBelt() {
     return map;
   }, [activityQuery.data?.days]);
 
+  const acceptedByDate = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const day of activityQuery.data?.days ?? []) {
+      map.set(day.date, day.acceptedCount);
+    }
+    return map;
+  }, [activityQuery.data?.days]);
+
   const weekStats = useMemo(() => {
     let activeDays = 0;
     let totalSolved = 0;
@@ -64,7 +72,7 @@ export function WeekBelt() {
     return { activeDays, totalSolved };
   }, [weekKeys, countByDate, todayKey]);
 
-  const streak = activityQuery.data?.maxStreak ?? 0;
+  const streak = activityQuery.data?.currentStreak ?? 0;
 
   return (
     <Box
@@ -88,10 +96,11 @@ export function WeekBelt() {
           const isToday = dateKey === todayKey;
           const isFuture = dateKey > todayKey;
           const solvedCount = countByDate.get(dateKey) ?? 0;
+          const acceptedCount = acceptedByDate.get(dateKey) ?? 0;
           let state: DayState = "missed";
           if (isFuture) state = "future";
           else if (isToday) state = "today";
-          else if (solvedCount > 0) state = "solved";
+          else if (acceptedCount > 0) state = "solved";
 
           return (
             <Box
@@ -122,7 +131,7 @@ export function WeekBelt() {
             >
               <Typography
                 sx={{
-                  fontFamily: '"JetBrains Mono", monospace',
+                  fontFamily: "var(--font-number)",
                   fontSize: "10px",
                   fontWeight: 400,
                   textTransform: "uppercase",
@@ -152,7 +161,7 @@ export function WeekBelt() {
                       ? {
                           bgcolor: miui.active,
                           border: `1.5px solid ${miui.accent}`,
-                          boxShadow: "0 0 12px rgba(155,127,234,0.18)",
+                          boxShadow: `0 0 10px ${miui.accentGlow}`,
                         }
                       : state === "solved"
                         ? {
@@ -218,7 +227,7 @@ export function WeekBelt() {
               {state === "today" ? (
                 <Typography
                   sx={{
-                    fontFamily: '"JetBrains Mono", monospace',
+                    fontFamily: "var(--font-number)",
                     fontSize: "9px",
                     color: miui.accent,
                     fontWeight: 400,
@@ -255,7 +264,7 @@ export function WeekBelt() {
         }}
       >
         <Typography sx={{ fontSize: "12px", fontWeight: 400, color: miui.textMuted }}>
-          Week progress: {weekStats.activeDays}/7 days active · {weekStats.totalSolved} problems solved
+          Week progress: {weekStats.activeDays}/7 days active · {weekStats.totalSolved} full submits
         </Typography>
         {streak > 0 ? (
           <Box className={streak > 0 ? "streak-active" : "streak-inactive"}>

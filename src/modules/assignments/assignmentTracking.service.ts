@@ -24,6 +24,7 @@ export type TrackedAssignmentItem = {
 };
 
 export type LearningStats = {
+  /** Unique problems first accepted today (assignments + catalog), UTC day. */
   solvedToday: number;
   pendingToday: number;
   dueCount: number;
@@ -381,11 +382,12 @@ export async function getAssignmentHistory(
 
 export async function getLearningStats(userId: string): Promise<LearningStats> {
   const today = todayUtc();
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
   const [solvedToday, pendingToday, dueCount, totalAccepted, totalSolved, totalProblemsInCatalog] =
     await Promise.all([
-      prisma.assignment.count({
-        where: { userId, assignedDate: today, status: AssignmentStatus.SOLVED },
+      prisma.userProblemSolve.count({
+        where: { userId, solvedAt: { gte: today, lt: tomorrow } },
       }),
       prisma.assignment.count({
         where: {

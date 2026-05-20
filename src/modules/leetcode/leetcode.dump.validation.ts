@@ -12,5 +12,12 @@ export const dumpDetailsBodySchema = z.object({
   force: z.boolean().optional().default(false),
 });
 
+export const dumpNeetCode150BodySchema = z.object({
+  delayMs: z.number().int().min(0).max(10_000).optional(),
+  /** When true (default), writes `prisma/data/neetcode-150.json` for CLI sync. */
+  persistToRepo: z.boolean().optional().default(true),
+});
+
 export type DumpCatalogBody = z.infer<typeof dumpCatalogBodySchema>;
 export type DumpDetailsBody = z.infer<typeof dumpDetailsBodySchema>;
+export type DumpNeetCode150Body = z.infer<typeof dumpNeetCode150BodySchema>;

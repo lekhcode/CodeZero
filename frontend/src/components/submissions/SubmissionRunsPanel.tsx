@@ -224,6 +224,7 @@ export function SubmissionRunsPanel({
       </Collapse>
 
       <Box
+        className="app-scroll"
         sx={{
           flex: 1,
           minHeight: 0,

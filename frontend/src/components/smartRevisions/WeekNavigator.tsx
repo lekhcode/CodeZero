@@ -23,7 +23,7 @@ export function WeekNavigator({ label, weekOffset, onChange, disableNext = false
       </IconButton>
       <Typography
         sx={{
-          fontFamily: '"JetBrains Mono", monospace',
+          fontFamily: "var(--font-number)",
           fontSize: "12px",
           color: miui.textMuted,
           textAlign: "center",

@@ -106,7 +106,7 @@ export function ExploreScheduleCard({ template, enrolled, onEnroll }: ExploreSch
             sx={{
               mb: 1,
               display: "block",
-              fontFamily: '"JetBrains Mono", monospace',
+              fontFamily: "var(--font-number)",
               fontSize: "12px",
               color: miui.textMuted,
               fontWeight: 400,

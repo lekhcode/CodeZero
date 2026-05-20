@@ -78,7 +78,7 @@ function SummaryRow({
       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
         <Typography
           sx={{
-            fontFamily: '"JetBrains Mono", monospace',
+            fontFamily: "var(--font-number)",
             fontSize: "12px",
             color: pending > 0 ? bc.danger : miui.textMuted,
           }}
@@ -186,11 +186,8 @@ export function SmartRevisionsTab() {
     navigate(`/problems/${slug}?autoRevisionId=${encodeURIComponent(id)}`);
   };
 
-  const todayItems = [
-    ...(todayQuery.data?.daily ?? []),
-    ...(todayQuery.data?.weekly ?? []),
-    ...(todayQuery.data?.monthly ?? []),
-  ];
+  /** D+1 only — yesterday's solve appears here today. */
+  const todayItems = todayQuery.data?.daily ?? [];
 
   const summary = summaryQuery.data;
 
@@ -202,7 +199,8 @@ export function SmartRevisionsTab() {
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <SectionCard title="Smart Revisions" bodySx={{ ...sectionContentSx, pt: 1.5, pb: 1.5 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Problems you solve are automatically scheduled for daily, weekend, and month-end revision.
+          Each solve schedules one daily (tomorrow), one weekly (that week&apos;s Saturday), and one
+          month-end revision — each shown in its own section below.
         </Typography>
 
         <SummaryRow

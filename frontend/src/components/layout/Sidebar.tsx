@@ -19,16 +19,20 @@ import HistoryRoundedIcon from "@mui/icons-material/HistoryRounded";
 import ExploreRoundedIcon from "@mui/icons-material/ExploreRounded";
 import EventNoteRoundedIcon from "@mui/icons-material/EventNoteRounded";
 import PsychologyRoundedIcon from "@mui/icons-material/PsychologyRounded";
+import ForumRoundedIcon from "@mui/icons-material/ForumRounded";
+import SettingsRoundedIcon from "@mui/icons-material/SettingsRounded";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import MenuOpenRoundedIcon from "@mui/icons-material/MenuOpenRounded";
 import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import { useUiStore } from "@/store/uiStore";
+import { AppCopyright } from "@/components/layout/AppCopyright";
 import { glassSx, miui } from "@/theme/theme";
 
-const DRAWER_WIDTH = 260;
-const DRAWER_COLLAPSED = 72;
+const DRAWER_WIDTH = 228;
+const DRAWER_COLLAPSED = 60;
 
 const NAV = [
+  { to: "/community", label: "Community", icon: <ForumRoundedIcon /> },
   { to: "/dashboard", label: "Dashboard", icon: <DashboardRoundedIcon /> },
   { to: "/lab", label: "Lab", icon: <CodeRoundedIcon /> },
   { to: "/today", label: "Today", icon: <TodayRoundedIcon /> },
@@ -36,6 +40,7 @@ const NAV = [
   { to: "/submissions", label: "Submissions", icon: <HistoryRoundedIcon /> },
   { to: "/templates", label: "Explore", icon: <ExploreRoundedIcon /> },
   { to: "/schedules", label: "My schedules", icon: <EventNoteRoundedIcon /> },
+  { to: "/settings", label: "Settings", icon: <SettingsRoundedIcon /> },
 ];
 
 function NavContent({
@@ -49,10 +54,10 @@ function NavContent({
   const toggleSidebarCollapsed = useUiStore((s) => s.toggleSidebarCollapsed);
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", p: collapsed ? 1 : 2 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", p: collapsed ? 0.75 : 1.25 }}>
       <Box
         sx={{
-          mb: 2,
+          mb: 1.25,
           px: collapsed ? 0 : 1,
           display: "flex",
           alignItems: "center",
@@ -62,7 +67,7 @@ function NavContent({
       >
         {!collapsed ? (
           <>
-            <CodeZeroBrandLink size={36} onClick={onNavigate} />
+            <CodeZeroBrandLink size={30} onClick={onNavigate} />
             <Tooltip title="Collapse sidebar" placement="right">
               <IconButton size="small" onClick={toggleSidebarCollapsed} aria-label="Collapse sidebar">
                 <MenuOpenRoundedIcon fontSize="small" sx={{ transform: "rotate(180deg)" }} />
@@ -71,9 +76,9 @@ function NavContent({
           </>
         ) : (
           <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-            <Tooltip title="Dashboard" placement="right">
+            <Tooltip title="Community" placement="right">
               <span>
-                <CodeZeroBrandLink size={34} compact onClick={onNavigate} />
+                <CodeZeroBrandLink size={28} compact onClick={onNavigate} />
               </span>
             </Tooltip>
             <Tooltip title="Expand sidebar" placement="right">
@@ -97,8 +102,9 @@ function NavContent({
                 borderRadius: 0,
                 mb: 0.25,
                 justifyContent: collapsed ? "center" : "flex-start",
-                px: collapsed ? 1 : 2,
-                py: 1,
+                px: collapsed ? 0.75 : 1.25,
+                py: 0.65,
+                minHeight: 36,
                 bgcolor: active ? miui.accentSoft : "transparent",
                 color: active ? "primary.main" : "text.secondary",
                 "&:hover": {
@@ -108,14 +114,27 @@ function NavContent({
               }}
             >
               <ListItemIcon
-                sx={{ color: "inherit", minWidth: collapsed ? 0 : 40, justifyContent: "center" }}
+                sx={{
+                  color: "inherit",
+                  minWidth: collapsed ? 0 : 30,
+                  justifyContent: "center",
+                  "& svg": { fontSize: 18 },
+                }}
               >
                 {item.icon}
               </ListItemIcon>
               {!collapsed && (
                 <ListItemText
                   primary={item.label}
-                  slotProps={{ primary: { sx: { fontWeight: active ? 700 : 500 } } }}
+                  slotProps={{
+                    primary: {
+                      sx: {
+                        fontWeight: active ? 600 : 500,
+                        fontSize: "0.8125rem",
+                        letterSpacing: "0.01em",
+                      },
+                    },
+                  }}
                 />
               )}
             </ListItemButton>
@@ -129,6 +148,9 @@ function NavContent({
           );
         })}
       </List>
+      <Box sx={{ flexShrink: 0, pt: 1, mt: "auto", px: collapsed ? 0 : 0.5 }}>
+        <AppCopyright collapsed={collapsed} />
+      </Box>
     </Box>
   );
 }
@@ -145,7 +167,7 @@ export function Sidebar() {
         anchor="left"
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
-        slotProps={{ paper: { sx: { width: DRAWER_WIDTH, ...glassSx } } }}
+        slotProps={{ paper: { sx: { width: DRAWER_WIDTH, ...glassSx, bgcolor: miui.sidebarBg } } }}
       >
         <Box sx={{ display: "flex", justifyContent: "flex-end", p: 1 }}>
           <IconButton onClick={() => setSidebarOpen(false)}>
@@ -167,8 +189,9 @@ export function Sidebar() {
         transition: theme.transitions.create("width", { duration: theme.transitions.duration.shorter }),
         flexShrink: 0,
         ...glassSx,
-        bgcolor: miui.paper,
-        borderRight: `1px solid ${miui.border}`,
+        bgcolor: miui.sidebarBg,
+        backgroundImage: miui.gradientSidebar,
+        borderRight: `1px solid ${miui.sidebarBorder}`,
         minHeight: "100vh",
         position: "sticky",
         top: 0,

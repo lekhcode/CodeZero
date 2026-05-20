@@ -93,8 +93,8 @@ async function attachVisibleTestcaseExamples(
 /**
  * Today's POTD: LeetCode daily slug → full detail in `problems` → calendar row in `daily_potd`.
  *
- * Triggered by `GET /api/v1/daily-problem` (run once per morning after LC releases; upsert prevents dupes).
- * Later: replace with a cron job calling the same function at ~00:02 US — no schema change needed.
+ * Used by `GET /api/v1/daily-problem`, `npm run sync:daily-potd`, and the daily POTD cron job.
+ * Upserts are idempotent — safe to run multiple times per day.
  */
 export async function getTodayDailyProblem(): Promise<ProblemDetailResponse> {
   const dailyRaw = await fetchDailyQuestionRaw();

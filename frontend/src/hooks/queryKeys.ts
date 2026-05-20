@@ -15,6 +15,7 @@ export const queryKeys = {
   trackedHistory: (page: number) => ["learning", "history", page] as const,
   submissionActivity: (selection: string | number) => ["submissions", "activity", selection] as const,
   learningInsights: ["learning", "insights"] as const,
+  leaderboard: ["users", "leaderboard"] as const,
   submissions: (filters: Record<string, unknown>) => ["submissions", filters] as const,
   submissionsSolvedStats: ["submissions", "solved-stats"] as const,
   submission: (id: string) => ["submissions", id] as const,
@@ -43,6 +44,10 @@ export const queryKeys = {
   dueCalendarSummaryWeek: (weekStart: string) =>
     [...dueCalendarSummaryPrefix, "week", weekStart] as const,
   dueCalendarDay: (date: string) => [...dueCalendarDayPrefix, date] as const,
+  forumHub: ["forum", "hub"] as const,
+  forumPosts: (filters: Record<string, unknown>) => ["forum", "posts", filters] as const,
+  forumPost: (id: string) => ["forum", "post", id] as const,
+  forumComments: (postId: string) => ["forum", "comments", postId] as const,
 };
 
 export const brainCacheKeyPrefix = ["brain-cache"] as const;
@@ -59,6 +64,7 @@ export const learningProgressKeyPrefixes = [
   queryKeys.todayAssignments,
   ["submissions", "activity"] as const,
   queryKeys.learningInsights,
+  queryKeys.leaderboard,
   ["submissions"] as const,
   ["problems", "catalog"] as const,
   dueCalendarSummaryPrefix,

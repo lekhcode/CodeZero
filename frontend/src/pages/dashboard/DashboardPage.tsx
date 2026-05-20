@@ -25,6 +25,7 @@ import { ProblemCatalogInfiniteList } from "@/components/problems/ProblemCatalog
 import { useAuthStore } from "@/store/authStore";
 import { AnimatedBanner } from "@/components/ui/AnimatedBanner";
 import { WeekBelt } from "@/components/dashboard/WeekBelt";
+import { DashboardLeaderboard } from "@/components/dashboard/DashboardLeaderboard";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { FadeInCard } from "@/components/ui/FadeInCard";
 import { dashNavTabSx, miui, miuiCardSx, monoStatSx, sectionContentSx } from "@/theme/theme";
@@ -43,65 +44,74 @@ const fadeUp = {
   show: { opacity: 1, y: 0, transition: { duration: 0.35 } },
 };
 
-function LiveStat({
+function HeroInlineStat({
   label,
   value,
   accent,
   pulse,
   valueTo,
-  delay = 0,
 }: {
   label: string;
   value: number;
   accent: string;
   pulse?: boolean;
   valueTo?: string;
-  delay?: number;
 }) {
-  const valueNode = (
-    <Typography
-      component={valueTo !== undefined ? RouterLink : "span"}
-      to={valueTo}
-      sx={{
-        ...monoStatSx,
-        fontSize: "2rem",
-        fontWeight: 700,
-        lineHeight: 1,
-        color: accent,
-        textDecoration: "none",
-        display: "inline-block",
-        ...(valueTo !== undefined
-          ? {
-              cursor: "pointer",
-              "&:hover": { filter: "brightness(1.1)" },
-            }
-          : {}),
-      }}
-    >
-      <AnimatedNumber value={value} />
-    </Typography>
-  );
+  const showPulse = pulse === true && value > 0;
 
   return (
-    <FadeInCard delay={delay} className="card miui-card" borderRadius={3}>
-      <Box
-        className={pulse && value > 0 ? "overdue-active" : undefined}
+    <Box
+      className={
+        showPulse ? "hero-inline-stat hero-inline-stat--overdue" : "hero-inline-stat"
+      }
+      sx={{
+        position: "relative",
+        flexShrink: 0,
+        minWidth: 76,
+        pl: 0.5,
+        pr: 2.5,
+        mr: 0.25,
+        py: 0.15,
+        borderRight: `1px solid ${miui.border}`,
+        "&:last-of-type": { borderRight: "none", pr: 0, mr: 0 },
+      }}
+    >
+      <Typography
         sx={{
-          ...miuiCardSx,
-          p: 2,
-          borderRadius: 3,
-          height: "100%",
-          minWidth: 0,
-          position: "relative",
-          overflow: "hidden",
+          display: "block",
+          fontSize: "0.625rem",
+          fontWeight: 600,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: miui.textDim,
+          mb: 0.25,
         }}
       >
-        <Typography variant="caption" sx={{ display: "block", mb: 0.75 }}>
-          {label}
-        </Typography>
-        {valueNode}
-      </Box>
-    </FadeInCard>
+        {label}
+      </Typography>
+      <Typography
+        className={showPulse ? "hero-inline-stat-value" : undefined}
+        component={valueTo !== undefined ? RouterLink : "span"}
+        to={valueTo}
+        sx={{
+          ...monoStatSx,
+          fontSize: "1.125rem",
+          fontWeight: 700,
+          lineHeight: 1,
+          color: accent,
+          textDecoration: "none",
+          display: "inline-block",
+          ...(valueTo !== undefined
+            ? {
+                cursor: "pointer",
+                "&:hover": { filter: "brightness(1.12)" },
+              }
+            : {}),
+        }}
+      >
+        <AnimatedNumber value={value} />
+      </Typography>
+    </Box>
   );
 }
 
@@ -155,46 +165,82 @@ export function DashboardPage() {
 
   const totalToday = pendingToday.length + solvedToday.length;
   const progressPct = totalToday > 0 ? Math.round((solvedToday.length / totalToday) * 100) : 0;
-  const firstName = user?.email?.split("@")[0] ?? "there";
+  const greetingName =
+    user?.username ?? user?.fullName?.trim().split(/\s+/)[0] ?? user?.name ?? user?.email?.split("@")[0] ?? "there";
 
   return (
     <PageContainer sx={{ maxWidth: "100%" }}>
+      <Grid container spacing={2} sx={{ alignItems: "stretch" }}>
+        <Grid size={{ xs: 12, xl: 9 }}>
       <motion.div variants={stagger} initial="hidden" animate="show">
         <motion.div variants={fadeUp}>
           <AnimatedBanner
             subtle
             sx={{
-              mb: 2,
-              p: 2,
-              borderRadius: 3,
-              bgcolor: miui.paper,
-              border: `1px solid ${miui.border}`,
-              borderLeft: `3px solid ${miui.accent}`,
+              mb: 1.5,
+              p: 1.5,
+              borderRadius: 0,
+              bgcolor: "transparent",
+              border: "none",
+              borderBottom: `1px solid ${miui.border}`,
+              borderLeft: `2px solid ${miui.accent}`,
+              pl: 1.5,
               boxSizing: "border-box",
               boxShadow: "none",
             }}
           >
-            <Grid container spacing={2}>
+            <Grid container spacing={1.5}>
               <Grid size={{ xs: 12, md: 8 }}>
-                <Typography variant="overline" sx={{ color: "text.disabled", display: "block" }}>
+                <Typography sx={{ color: "text.disabled", display: "block", fontSize: "0.6875rem", letterSpacing: "0.04em" }}>
                   {todayLabel}
                 </Typography>
                 <Typography
-                  variant="h5"
-                  sx={{ fontFamily: '"Space Grotesk", sans-serif', fontWeight: 700, fontSize: "1.625rem", mt: 0.25 }}
+                  sx={{
+                    fontFamily: '"Space Grotesk", sans-serif',
+                    fontWeight: 700,
+                    fontSize: "1.25rem",
+                    mt: 0.2,
+                    color: miui.text,
+                  }}
                 >
-                  Hi {firstName}
+                  Hi {greetingName}
                 </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75, maxWidth: 480 }}>
+                <Typography sx={{ mt: 0.5, maxWidth: 480, fontSize: "0.8125rem", color: "text.secondary" }}>
                   {progressPct}% of today&apos;s queue done
                   {dueAssignments.length > 0 && ` · ${dueAssignments.length} overdue`}
                 </Typography>
                 <LinearProgress
                   variant="determinate"
                   value={progressPct}
-                  sx={{ mt: 1.5, height: 4, borderRadius: 2, bgcolor: miui.elevated }}
+                  sx={{ mt: 1, height: 3, borderRadius: 0, bgcolor: miui.elevated }}
                 />
-                <Stack direction="row" spacing={0.5} sx={{ mt: 1.5, flexWrap: "wrap", borderBottom: `1px solid ${miui.border}` }}>
+                {stats && (
+                  <Stack
+                    direction="row"
+                    sx={{
+                      mt: 1.25,
+                      pt: 1,
+                      flexWrap: "wrap",
+                      rowGap: 0.75,
+                      columnGap: 0.5,
+                      alignItems: "flex-start",
+                      borderTop: `1px solid ${miui.border}`,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <HeroInlineStat label="Solved today" value={stats.solvedToday} accent={miui.success} />
+                    <HeroInlineStat label="Pending" value={stats.pendingToday} accent={miui.accent} />
+                    <HeroInlineStat
+                      label="Overdue"
+                      value={stats.dueCount}
+                      accent={miui.danger}
+                      pulse
+                      valueTo="/today?tab=timeline"
+                    />
+                    <HeroInlineStat label="Accepted" value={stats.totalAccepted} accent={miui.text} />
+                  </Stack>
+                )}
+                <Stack direction="row" spacing={0.5} sx={{ mt: 1.25, flexWrap: "wrap", borderBottom: `1px solid ${miui.border}` }}>
                   <Button
                     component={RouterLink}
                     to="/today"
@@ -235,7 +281,7 @@ export function DashboardPage() {
                   <SolveProgressRing
                     solved={stats.totalSolved}
                     total={stats.totalProblemsInCatalog}
-                    size={96}
+                    size={80}
                     label="Catalog"
                   />
                 </Grid>
@@ -248,28 +294,6 @@ export function DashboardPage() {
           <LoadingSkeleton variant="detail" />
         ) : (
           <>
-            <Grid container spacing={1.5} sx={{ mb: 2 }}>
-              <Grid size={{ xs: 6, md: 3 }}>
-                <LiveStat label="Solved today" value={stats?.solvedToday ?? 0} accent={miui.success} delay={0} />
-              </Grid>
-              <Grid size={{ xs: 6, md: 3 }}>
-                <LiveStat label="Pending" value={stats?.pendingToday ?? 0} accent={miui.accent} delay={0.06} />
-              </Grid>
-              <Grid size={{ xs: 6, md: 3 }}>
-                <LiveStat
-                  label="Overdue"
-                  value={stats?.dueCount ?? 0}
-                  accent={miui.danger}
-                  pulse
-                  valueTo="/today?tab=timeline"
-                  delay={0.12}
-                />
-              </Grid>
-              <Grid size={{ xs: 6, md: 3 }}>
-                <LiveStat label="Accepted" value={stats?.totalAccepted ?? 0} accent={miui.accent} delay={0.18} />
-              </Grid>
-            </Grid>
-
             {(todayQuery.isError || dueQuery.isError) && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {todayQuery.error?.message ?? dueQuery.error?.message}
@@ -429,6 +453,12 @@ export function DashboardPage() {
           </>
         )}
       </motion.div>
+        </Grid>
+
+        <Grid size={{ xs: 12, xl: 3 }} sx={{ display: "flex", minWidth: 0 }}>
+          <DashboardLeaderboard />
+        </Grid>
+      </Grid>
     </PageContainer>
   );
 }

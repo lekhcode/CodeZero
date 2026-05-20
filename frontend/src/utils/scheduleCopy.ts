@@ -30,9 +30,10 @@ const CATALOG: Record<string, TemplateCatalogMeta> = {
     gradient: ["#6366f1", "#0ea5e9"],
   },
   "neetcode-150": {
-    tagline: "NeetCode’s curated roadmap (coming soon to CodeZero).",
-    highlights: ["Video-aligned list", "Pattern-based", "Expandable later"],
+    tagline: "NeetCode’s curated 150-problem roadmap for interview prep.",
+    highlights: ["150 pattern-based problems", "Video-aligned list", "Arrays → graphs → DP"],
     problemCount: 150,
+    badge: "Popular",
     gradient: ["#8b5cf6", "#a78bfa"],
   },
   "binary-search": {

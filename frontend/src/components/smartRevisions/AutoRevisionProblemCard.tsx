@@ -53,7 +53,7 @@ export function AutoRevisionProblemCard({ item, onRevise, busy = false }: AutoRe
             sx={{
               fontSize: "11px",
               color: miui.textMuted,
-              fontFamily: '"JetBrains Mono", monospace',
+              fontFamily: "var(--font-number)",
             }}
           >
             {item.scheduledFor}

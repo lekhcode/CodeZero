@@ -73,6 +73,25 @@ export type DetailsDumpResult = {
   durationMs: number;
 };
 
+export type StudyPlanSyncSummary = {
+  templateSlug: string;
+  total: number;
+  synced: number;
+  stubbed: number;
+  linked: number;
+  failed: number;
+  failures: Array<{ order: number; slug: string; reason: string }>;
+  durationMs: number;
+};
+
+export type NeetCode150DumpResult = {
+  source: "neetcode.io";
+  fetched: number;
+  dataFilePath?: string;
+  sync: StudyPlanSyncSummary;
+  durationMs: number;
+};
+
 /** Metadata-only normalized row (POTD sync). */
 export type NormalizedDailyProblem = {
   leetcodeId: number;

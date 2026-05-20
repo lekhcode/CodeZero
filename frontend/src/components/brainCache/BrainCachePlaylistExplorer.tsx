@@ -79,6 +79,7 @@ export function BrainCachePlaylistExplorer({
           overflow: "auto",
           bgcolor: alpha(miui.bg, 0.5),
         }}
+        className="app-scroll"
       >
         <Typography
           variant="caption"
@@ -212,7 +213,7 @@ export function BrainCachePlaylistExplorer({
                 <DeleteOutlineRoundedIcon fontSize="small" />
               </IconButton>
             </Box>
-            <Box sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
+            <Box className="app-scroll" sx={{ flex: 1, overflow: "auto", minHeight: 0 }}>
               <BrainCachePlaylistProblemsList playlist={selected} />
             </Box>
           </>

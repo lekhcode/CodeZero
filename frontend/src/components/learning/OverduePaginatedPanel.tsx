@@ -131,17 +131,13 @@ export function OverduePaginatedPanel({ assignments, isLoading = false }: Overdu
       </Box>
 
       <Box
+        className="app-scroll"
         sx={{
           maxHeight: OVERDUE_LIST_MAX_HEIGHT,
           overflowY: "auto",
           overflowX: "hidden",
           WebkitOverflowScrolling: "touch",
           minHeight: 0,
-          "&::-webkit-scrollbar": { width: 5 },
-          "&::-webkit-scrollbar-thumb": {
-            borderRadius: 4,
-            bgcolor: miui.borderStrong,
-          },
         }}
       >
         {groups.map((group) => (

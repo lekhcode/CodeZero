@@ -148,7 +148,7 @@ export function RadialStatRing({
             >
               <Typography
                 sx={{
-                  fontFamily: '"JetBrains Mono", monospace',
+                  fontFamily: "var(--font-number)",
                   fontWeight: 700,
                   lineHeight: 1,
                   fontSize: compact ? "0.95rem" : "1.25rem",

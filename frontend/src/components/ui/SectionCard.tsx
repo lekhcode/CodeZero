@@ -53,6 +53,7 @@ export function SectionCard({
         </Box>
       )}
       <Box
+        className={scroll ? "app-scroll" : undefined}
         sx={{
           ...(scroll ? sectionScrollSx : {}),
           flex: scroll ? 1 : undefined,

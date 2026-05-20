@@ -13,8 +13,8 @@ import { miui, monoStatSx } from "@/theme/theme";
 
 const ROLLING_VALUE = "rolling";
 
-/** Legend swatches: empty + three activity steps. */
-const LEGEND_LEVELS = [0, 1, 2, 4] as const;
+/** Legend swatches: empty + five activity steps (all palette colors). */
+const LEGEND_LEVELS = [0, 1, 2, 3, 4, 5] as const;
 
 type WeekColumn = Array<{ date: string; count: number } | null>;
 
@@ -32,10 +32,11 @@ function parseLocalDate(dateStr: string): Dayjs {
 
 function intensityLevel(count: number): number {
   if (count <= 0) return 0;
-  if (count <= 2) return 1;
-  if (count <= 4) return 2;
-  if (count <= 6) return 3;
-  return 4;
+  if (count <= 1) return 1;
+  if (count <= 2) return 2;
+  if (count <= 3) return 3;
+  if (count <= 4) return 4;
+  return 5;
 }
 
 /** One month only: pad to weekday of 1st, then exactly that month's days in Sun–Sat columns. */
@@ -51,7 +52,7 @@ function weeksForMonth(monthDays: SubmissionActivitySummary["days"]): WeekColumn
     const d = parseLocalDate(day.date);
     if (d.format("YYYY-MM") !== monthKey) continue;
 
-    bucket.push({ date: day.date, count: day.count });
+    bucket.push({ date: day.date, count: day.acceptedCount });
     if (bucket.length === 7) {
       weeks.push(bucket);
       bucket = [];
@@ -142,7 +143,8 @@ export function SubmissionActivityHeatmap({
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <StatInline label="Active days" value={activity.activeDays} />
-          <StatInline label="Max streak" value={activity.maxStreak} hint="Accepted" />
+          <StatInline label="Current streak" value={activity.currentStreak} />
+          <StatInline label="Max streak" value={activity.maxStreak} />
           <FormControl size="small" sx={{ minWidth: 128 }}>
             <Select
               value={selectValue}
@@ -307,7 +309,7 @@ function StatInline({
       </Typography>
       <Typography
         variant="subtitle2"
-        sx={{ fontFamily: '"JetBrains Mono", monospace', fontWeight: 700, lineHeight: 1.1 }}
+        sx={{ fontFamily: "var(--font-number)", fontWeight: 700, lineHeight: 1.1 }}
       >
         {value}
       </Typography>
@@ -330,8 +332,8 @@ function HeatCell({
   const color = miui.heatmap[level] ?? miui.heatmap[0];
   const label =
     cell.count === 0
-      ? `No submissions · ${parseLocalDate(cell.date).format("MMM D, YYYY")}`
-      : `${cell.count} on ${parseLocalDate(cell.date).format("MMM D, YYYY")}`;
+      ? `No submits · ${parseLocalDate(cell.date).format("MMM D, YYYY")}`
+      : `${cell.count} full submit${cell.count === 1 ? "" : "s"} · ${parseLocalDate(cell.date).format("MMM D, YYYY")}`;
 
   return (
     <Tooltip title={label} arrow placement="top">

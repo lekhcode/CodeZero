@@ -11,3 +11,8 @@ export async function listTopInterview150(_req: Request, res: Response): Promise
   const plan = await plansService.getTopInterview150PlanProblems();
   ApiResponse.success(res, plan);
 }
+
+export async function listNeetCode150(_req: Request, res: Response): Promise<void> {
+  const plan = await plansService.getNeetCode150PlanProblems();
+  ApiResponse.success(res, plan);
+}

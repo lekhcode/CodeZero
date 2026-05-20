@@ -986,6 +986,7 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
       </Typography>
 
       <Box
+        className="app-scroll"
         sx={{
           px: 1.25,
           pb: 1.25,
@@ -995,12 +996,6 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
           overflowY: "auto",
           overflowX: "hidden",
           fontSize: 12,
-          scrollbarGutter: "stable",
-          "&::-webkit-scrollbar": { width: 8 },
-          "&::-webkit-scrollbar-thumb": {
-            bgcolor: alpha("#fff", 0.12),
-            borderRadius: 4,
-          },
         }}
       >
         {error !== null && (
@@ -1135,6 +1130,7 @@ export function ProblemJudgeWorkspace({ slug, problem, judgeMeta }: ProblemJudge
               <Tab value="submissions" label="Submissions" sx={{ textTransform: "none", fontWeight: 700 }} />
             </Tabs>
             <Box
+              className="app-scroll"
               sx={{
                 flex: 1,
                 minHeight: 0,

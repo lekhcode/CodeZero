@@ -2,6 +2,7 @@ import { Box, Container } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import { motion } from "framer-motion";
 import { CodeZeroBrandLink } from "@/components/brand/CodeZeroBrandLink";
+import { AppCopyright } from "@/components/layout/AppCopyright";
 import { glassSx, miui } from "@/theme/theme";
 
 export function AuthLayout() {
@@ -36,6 +37,9 @@ export function AuthLayout() {
             <Outlet />
           </Box>
         </motion.div>
+        <Box sx={{ mt: 2.5 }}>
+          <AppCopyright align="center" />
+        </Box>
       </Container>
     </Box>
   );

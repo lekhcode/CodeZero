@@ -48,9 +48,9 @@ export function dotToneForDay(cell: DayCell | undefined): CalendarDotTone {
 }
 
 export const DOT_COLORS: Record<Exclude<CalendarDotTone, "none">, string> = {
-  success: "#22C55E",
-  warning: "#F6C360",
-  danger: "#EF4444",
+  success: "#34D399",
+  warning: "#FBBF24",
+  danger: "#F87171",
 };
 
 export function findDefaultSelectedDate(

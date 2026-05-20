@@ -18,8 +18,9 @@ export function FixedPageShell({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        px: { xs: 2, sm: 3 },
-        py: { xs: 1.5, sm: 2 },
+        px: { xs: 1.5, sm: 2 },
+        py: { xs: 1.25, sm: 1.5 },
+        fontSize: "0.875rem",
         width: "100%",
         maxWidth: "100%",
         ...sx,
@@ -40,6 +41,7 @@ export function ScrollRegion({
 }) {
   return (
     <Box
+      className="app-scroll"
       sx={{
         flex: 1,
         minHeight: 0,

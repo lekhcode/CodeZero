@@ -3,6 +3,8 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { authService } from "@/services/auth.service";
 import { useAuthStore } from "@/store/authStore";
+import { ApiRequestError } from "@/services/api";
+import { AppCopyright } from "@/components/layout/AppCopyright";
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID ?? "";
@@ -37,7 +39,7 @@ const SNIPPETS = [
   "0/1 knapsack",
 ];
 
-const PARTICLE_COLORS = ["#9B7FEA", "#4ADE80", "#F6C360", "#FC8181", "#7D7A8E"];
+const PARTICLE_COLORS = ["#6B6B6B", "#8A8A8A", "#B3B3B3", "#E5E5E5", "#4ADE80"];
 
 const OAUTH_ERRORS: Record<string, string> = {
   github_auth: "GitHub sign-in failed. Try again.",
@@ -110,7 +112,7 @@ function LoginPageInner() {
         vx: (Math.random() - 0.5) * 0.4,
         vy: -(Math.random() * 0.6 + 0.2),
         text: SNIPPETS[Math.floor(Math.random() * SNIPPETS.length)] ?? "dp[]",
-        color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)] ?? "#9B7FEA",
+        color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)] ?? "#8A8A8A",
         alpha: 0,
         size: Math.random() * 2 + 10,
         life: 0,
@@ -135,7 +137,7 @@ function LoginPageInner() {
           progress < 0.15 ? progress / 0.15 : progress > 0.75 ? 1 - (progress - 0.75) / 0.25 : 1;
 
         ctx.save();
-        ctx.globalAlpha = p.alpha * 0.55;
+        ctx.globalAlpha = p.alpha * 0.5;
         ctx.font = `${p.size}px 'Fira Code', monospace`;
         ctx.fillStyle = p.color;
         ctx.fillText(p.text, p.x, p.y);
@@ -167,7 +169,7 @@ function LoginPageInner() {
       try {
         const data = await authService.googleAuth(credential);
         setSession(data.user, data.accessToken);
-        navigate("/dashboard", { replace: true });
+        navigate("/community", { replace: true });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Google sign-in failed. Try again.");
       } finally {
@@ -233,7 +235,7 @@ function LoginPageInner() {
         title="Continue with GitHub"
         aria-label="Continue with GitHub"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#EDE9F6" aria-hidden>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
           <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
         </svg>
       </button>
@@ -250,12 +252,22 @@ function LoginPageInner() {
     setError("");
     try {
       if (mode === "signup") {
-        await authService.register(email, password);
+        await authService.register(email.trim().toLowerCase(), password);
+        navigate(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`, {
+          replace: true,
+        });
+        return;
       }
-      const data = await authService.login(email, password);
+      const data = await authService.login(email.trim().toLowerCase(), password);
       setSession(data.user, data.accessToken);
-      navigate("/dashboard", { replace: true });
+      navigate("/community", { replace: true });
     } catch (err) {
+      if (err instanceof ApiRequestError && err.code === "EMAIL_NOT_VERIFIED") {
+        navigate(`/verify-email?email=${encodeURIComponent(email.trim().toLowerCase())}`, {
+          replace: true,
+        });
+        return;
+      }
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setLoading(false);
@@ -263,329 +275,119 @@ function LoginPageInner() {
   };
 
   return (
-    <div
-      className="login-page"
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 20,
-        display: "grid",
-        gridTemplateColumns: "1fr 480px",
-        height: "100vh",
-        background: "#0C0B10",
-        fontFamily: "'Syne', sans-serif",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        className="login-left-panel"
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: 64,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            backgroundImage: "radial-gradient(#1E1C28 1px, transparent 1px)",
-            backgroundSize: "28px 28px",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "radial-gradient(ellipse 65% 55% at 35% 45%, rgba(155,127,234,0.07) 0%, transparent 70%)",
-          }}
-        />
-        <canvas
-          ref={canvasRef}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
-          aria-hidden
-        />
-        <div style={{ position: "relative", zIndex: 2 }}>
-          <p
-            style={{
-              fontFamily: "'Fira Code', monospace",
-              fontSize: 11,
-              color: "#44414F",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              marginBottom: 14,
-            }}
-          >
-            your personal coding gym
-          </p>
-          <h1
-            style={{
-              fontSize: "clamp(32px, 4vw, 52px)",
-              fontWeight: 800,
-              color: "#EDE9F6",
-              lineHeight: 1.08,
-              marginBottom: 18,
-              letterSpacing: "-0.02em",
-            }}
-          >
+    <div className="login-page">
+      <section className="login-left-panel" aria-hidden={false}>
+        <div className="login-left-panel__grid" aria-hidden />
+        <div className="login-left-panel__glow" aria-hidden />
+        <canvas ref={canvasRef} className="login-left-panel__canvas" aria-hidden />
+        <div className="login-left-panel__content">
+          <p className="login-eyebrow">your personal coding gym</p>
+          <h1 className="login-hero-title">
             Train harder.
             <br />
-            <span style={{ color: "#9B7FEA" }}>Think sharper.</span>
+            <span className="login-hero-accent">Think sharper.</span>
           </h1>
-          <p
-            style={{
-              fontFamily: "'Fira Code', monospace",
-              fontSize: 13,
-              color: "#7D7A8E",
-              lineHeight: 1.7,
-              maxWidth: 380,
-              marginBottom: 48,
-            }}
-          >
+          <p className="login-hero-desc">
             DSA practice with spaced revision, streak tracking, and a Brain Cache that never lets
             important problems slip.
           </p>
-          <div style={{ display: "flex", gap: 40 }}>
+          <div className="login-stats">
             {[
-              { num: "3,167", label: "problems", color: "#EDE9F6" },
-              { num: "847", label: "active users", color: "#4ADE80" },
-              { num: "98%", label: "retention", color: "#E8834A" },
+              { num: "3,167", label: "problems", color: "var(--text-1)" },
+              { num: "847", label: "active users", color: "var(--success)" },
+              { num: "98%", label: "retention", color: "var(--text-1)" },
             ].map((s) => (
               <div key={s.label}>
-                <div
-                  style={{
-                    fontFamily: "'Fira Code', monospace",
-                    fontSize: 22,
-                    fontWeight: 500,
-                    color: s.color,
-                    marginBottom: 2,
-                  }}
-                >
+                <div className="login-stat-value" style={{ color: s.color }}>
                   {s.num}
                 </div>
-                <div
-                  style={{
-                    fontFamily: "'Fira Code', monospace",
-                    fontSize: 10,
-                    color: "#44414F",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                  }}
-                >
-                  {s.label}
-                </div>
+                <div className="login-stat-label">{s.label}</div>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      <div
-        className="login-right-panel"
-        style={{
-          background: "#13111A",
-          borderLeft: "1px solid #1E1C28",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          padding: "48px 44px",
-          position: "relative",
-          overflowY: "auto",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "'Fira Code', monospace",
-            fontSize: 18,
-            color: "#EDE9F6",
-            letterSpacing: "-0.5px",
-            marginBottom: 36,
-          }}
-        >
-          c&lt;&gt;de<span style={{ color: "#9B7FEA" }}>{"{0}"}</span>
-        </div>
+      <section className="login-right-panel">
+        <div className="login-right-inner">
+          <div className="login-brand zero-mark-spin-host">
+            c&lt;&gt;de<span className="login-brand-accent zero-mark-spin-target">{"{0}"}</span>
+          </div>
 
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: "#EDE9F6", marginBottom: 4 }}>
-          {mode === "signin" ? "Welcome back" : "Join the dojo"}
-        </h2>
-        <p
-          style={{
-            fontFamily: "'Fira Code', monospace",
-            fontSize: 12,
-            color: "#7D7A8E",
-            marginBottom: 28,
-          }}
-        >
-          {mode === "signin" ? "continue your training session_" : "start your revision journey_"}
-        </p>
+          <h2 className="login-heading">{mode === "signin" ? "Welcome back" : "Join the dojo"}</h2>
+          <p className="login-subheading">
+            {mode === "signin" ? "continue your training session_" : "start your revision journey_"}
+          </p>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "0 0 20px" }}>
-          <div style={{ flex: 1, height: 1, background: "#1E1C28" }} />
-          <span
-            style={{
-              fontFamily: "'Fira Code', monospace",
-              fontSize: 11,
-              color: "#44414F",
-              letterSpacing: "0.08em",
-            }}
-          >
-            or sign in with email
-          </span>
-          <div style={{ flex: 1, height: 1, background: "#1E1C28" }} />
-        </div>
+          <div className="login-divider">
+            <div className="login-divider__line" />
+            <span className="login-divider__label">or sign in with email</span>
+            <div className="login-divider__line" />
+          </div>
 
-        <form onSubmit={handleSubmit}>
-          {[
-            {
-              label: "Email",
-              type: "email",
-              value: email,
-              placeholder: "you@example.com",
-              onChange: setEmail,
-            },
-            {
-              label: "Password",
-              type: "password",
-              value: password,
-              placeholder: "••••••••",
-              onChange: setPassword,
-            },
-          ].map((field) => (
-            <div key={field.label} style={{ marginBottom: 12 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontFamily: "'Fira Code', monospace",
-                  fontSize: 10,
-                  color: "#7D7A8E",
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  marginBottom: 6,
-                }}
-              >
-                {field.label}
-              </label>
+          <form onSubmit={handleSubmit}>
+            <div className="login-field">
+              <label htmlFor="login-email">Email</label>
               <input
-                type={field.type}
-                value={field.value}
-                onChange={(e) => field.onChange(e.target.value)}
-                placeholder={field.placeholder}
-                autoComplete={field.type === "email" ? "email" : "current-password"}
-                style={{
-                  width: "100%",
-                  padding: "10px 14px",
-                  background: "#141220",
-                  border: "1px solid #1E1C28",
-                  borderRadius: 8,
-                  color: "#EDE9F6",
-                  fontFamily: "'Fira Code', monospace",
-                  fontSize: 13,
-                  outline: "none",
-                  transition: "border-color 180ms",
-                  boxSizing: "border-box",
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "#9B7FEA";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "#1E1C28";
-                }}
+                id="login-email"
+                className="login-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
               />
             </div>
-          ))}
 
-          {mode === "signin" && (
-            <div style={{ textAlign: "right", marginBottom: 16 }}>
-              <Link
-                to="/register"
-                style={{
-                  fontFamily: "'Fira Code', monospace",
-                  fontSize: 11,
-                  color: "#9B7FEA",
-                  textDecoration: "none",
-                }}
-              >
-                forgot password?
-              </Link>
+            <div className="login-field">
+              <label htmlFor="login-password">Password</label>
+              <input
+                id="login-password"
+                className="login-input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
+              />
             </div>
-          )}
 
-          {error && (
-            <div
-              style={{
-                fontFamily: "'Fira Code', monospace",
-                fontSize: 12,
-                color: "#FC8181",
-                background: "rgba(252,129,129,0.08)",
-                border: "1px solid rgba(252,129,129,0.18)",
-                borderRadius: 6,
-                padding: "8px 12px",
-                marginBottom: 12,
+            {mode === "signin" && (
+              <div className="login-forgot">
+                <Link to="/forgot-password">forgot password?</Link>
+              </div>
+            )}
+
+            {error ? <div className="login-error">{error}</div> : null}
+
+            <button type="submit" disabled={loading} className="login-submit-btn">
+              <span className="login-submit-btn__label">
+                {loading ? "connecting..." : mode === "signin" ? "Sign in →" : "Create account →"}
+              </span>
+            </button>
+          </form>
+
+          <p className="oauth-below-label">or continue with</p>
+          {oauthIcons}
+
+          <p className="login-footer">
+            {mode === "signin" ? "New here? " : "Have an account? "}
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === "signin" ? "signup" : "signin");
+                setError("");
               }}
             >
-              {error}
-            </div>
-          )}
+              {mode === "signin" ? "create account" : "sign in"}
+            </button>
+          </p>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="login-submit-btn"
-          >
-            <span className="login-submit-btn__label">
-              {loading ? "connecting..." : mode === "signin" ? "Sign in →" : "Create account →"}
-            </span>
-          </button>
-        </form>
-
-        <p className="oauth-below-label">or continue with</p>
-        {oauthIcons}
-
-        <p
-          style={{
-            textAlign: "center",
-            marginTop: 16,
-            fontFamily: "'Fira Code', monospace",
-            fontSize: 12,
-            color: "#7D7A8E",
-          }}
-        >
-          {mode === "signin" ? "New here? " : "Have an account? "}
-          <button
-            type="button"
-            onClick={() => {
-              setMode(mode === "signin" ? "signup" : "signin");
-              setError("");
-            }}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#9B7FEA",
-              cursor: "pointer",
-              fontFamily: "'Fira Code', monospace",
-              fontSize: 12,
-              padding: 0,
-            }}
-          >
-            {mode === "signin" ? "create account" : "sign in"}
-          </button>
-        </p>
-
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 2,
-            background: "linear-gradient(90deg, transparent, #9B7FEA, #E8834A, transparent)",
-          }}
-        />
-      </div>
+          <p className="login-copyright">
+            <AppCopyright align="center" />
+          </p>
+        </div>
+      </section>
     </div>
   );
 }

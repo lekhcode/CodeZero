@@ -34,7 +34,15 @@ export function Topbar() {
         overflow: "visible",
       }}
     >
-      <Toolbar sx={{ gap: 2, minHeight: { xs: 56, sm: 64 }, overflow: "visible" }}>
+      <Toolbar
+        sx={{
+          gap: 1.25,
+          minHeight: { xs: 44, sm: 48 },
+          py: 0.5,
+          px: { xs: 1, sm: 1.5 },
+          overflow: "visible",
+        }}
+      >
         {isMobile && (
           <IconButton edge="start" onClick={() => setSidebarOpen(true)} aria-label="Open menu">
             <MenuRoundedIcon />
@@ -51,21 +59,32 @@ export function Topbar() {
               flexShrink: 0,
             }}
           >
-            <Box sx={{ alignSelf: "flex-start", pt: 0.75 }}>
-              <GlobalProblemSearch />
-            </Box>
-            <Avatar sx={{ width: 36, height: 36, bgcolor: "primary.main", fontSize: 14, mt: 0.75 }}>
+            <GlobalProblemSearch />
+            <Avatar
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: "primary.main",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+              }}
+            >
               {user.email.charAt(0).toUpperCase()}
             </Avatar>
             <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ display: { xs: "none", md: "block" }, flexShrink: 0 }}
+              sx={{
+                display: { xs: "none", md: "block" },
+                flexShrink: 0,
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                color: "text.secondary",
+                letterSpacing: "0.01em",
+              }}
             >
               {user.email}
             </Typography>
-            <IconButton onClick={logout} aria-label="Logout" color="inherit">
-              <LogoutRoundedIcon />
+            <IconButton onClick={logout} aria-label="Logout" color="inherit" size="small" sx={{ p: 0.65 }}>
+              <LogoutRoundedIcon sx={{ fontSize: 18 }} />
             </IconButton>
           </Box>
         )}

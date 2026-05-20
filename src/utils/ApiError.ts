@@ -66,6 +66,10 @@ export class ApiError extends Error {
     return new ApiError(409, message, { code: "CONFLICT" });
   }
 
+  static tooManyRequests(message: string): ApiError {
+    return new ApiError(429, message, { code: "RATE_LIMITED" });
+  }
+
   /** Redis down, BullMQ unreachable, or other dependency outage. */
   static serviceUnavailable(message: string): ApiError {
     return new ApiError(503, message, { code: "SERVICE_UNAVAILABLE" });

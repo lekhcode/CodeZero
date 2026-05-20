@@ -4,19 +4,44 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link as RouterLink } from "react-router-dom";
 import { useRegister } from "@/hooks/useAuth";
+import { PasswordStrength } from "@/components/auth/PasswordStrength";
+import { validatePassword, isValidUsernameFormat, normalizeUsername } from "@/utils/passwordPolicy";
+import { useState } from "react";
 
 const schema = z
   .object({
     email: z.string().email("Enter a valid email"),
-    password: z.string().min(6, "At least 6 characters"),
+    username: z.string().optional(),
+    password: z.string(),
     confirm: z.string(),
   })
-  .refine((d) => d.password === d.confirm, { message: "Passwords do not match", path: ["confirm"] });
+  .superRefine((data, ctx) => {
+    const pv = validatePassword(data.password);
+    if (!pv.valid) {
+      for (const msg of pv.errors) {
+        ctx.addIssue({ code: "custom", message: msg, path: ["password"] });
+      }
+    }
+    if (data.password !== data.confirm) {
+      ctx.addIssue({ code: "custom", message: "Passwords do not match", path: ["confirm"] });
+    }
+    if (data.username?.trim()) {
+      const u = normalizeUsername(data.username);
+      if (!isValidUsernameFormat(u)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Username: 3–24 chars, lowercase, numbers, underscores",
+          path: ["username"],
+        });
+      }
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
 
 export function RegisterPage() {
   const registerMutation = useRegister();
+  const [password, setPassword] = useState("");
   const {
     register,
     handleSubmit,
@@ -26,7 +51,13 @@ export function RegisterPage() {
   return (
     <Box
       component="form"
-      onSubmit={handleSubmit((v) => registerMutation.mutate({ email: v.email, password: v.password }))}
+      onSubmit={handleSubmit((v) =>
+        registerMutation.mutate({
+          email: v.email.trim().toLowerCase(),
+          password: v.password,
+          username: v.username?.trim() ? normalizeUsername(v.username) : undefined,
+        }),
+      )}
     >
       <Typography variant="h5" sx={{ fontWeight: 800 }} gutterBottom>
         Start learning
@@ -36,7 +67,9 @@ export function RegisterPage() {
       </Typography>
 
       {registerMutation.isError && (
-        <Alert severity="error" sx={{ mb: 2 }}>{registerMutation.error.message}</Alert>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {registerMutation.error.message}
+        </Alert>
       )}
 
       <Stack spacing={2}>
@@ -49,13 +82,21 @@ export function RegisterPage() {
           helperText={errors.email?.message}
         />
         <TextField
+          label="Username (optional)"
+          fullWidth
+          {...register("username")}
+          error={Boolean(errors.username)}
+          helperText={errors.username?.message ?? "e.g. codezero_dev"}
+        />
+        <TextField
           label="Password"
           type="password"
           fullWidth
-          {...register("password")}
+          {...register("password", { onChange: (e) => setPassword(e.target.value) })}
           error={Boolean(errors.password)}
           helperText={errors.password?.message}
         />
+        <PasswordStrength password={password} />
         <TextField
           label="Confirm password"
           type="password"

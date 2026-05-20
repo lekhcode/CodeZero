@@ -21,7 +21,7 @@ export function GitHubCallbackPage() {
           const user = await authService.me();
           if (!cancelled) {
             setSession(user, token);
-            navigate("/dashboard", { replace: true });
+            navigate("/community", { replace: true });
           }
         } catch {
           if (!cancelled) {
@@ -38,7 +38,7 @@ export function GitHubCallbackPage() {
           const data = await authService.githubExchange(code);
           if (!cancelled) {
             setSession(data.user, data.accessToken);
-            navigate("/dashboard", { replace: true });
+            navigate("/community", { replace: true });
           }
         } catch {
           if (!cancelled) {
@@ -67,9 +67,9 @@ export function GitHubCallbackPage() {
         alignItems: "center",
         justifyContent: "center",
         height: "100vh",
-        background: "#0C0B10",
+        background: "var(--bg-base)",
         fontFamily: "'Fira Code', monospace",
-        color: "#7D7A8E",
+        color: "var(--text-2)",
         fontSize: 13,
       }}
     >

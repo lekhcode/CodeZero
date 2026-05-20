@@ -7,11 +7,13 @@ import { createApp } from "./app.js";
 import { env } from "./config/env.js";
 import { logger } from "./config/logger.js";
 import { prisma } from "./config/prisma.js";
+import { startDailyPotdCron } from "./jobs/dailyPotd.cron.js";
 
 const app = createApp();
 
 const server = app.listen(env.PORT, () => {
   logger.info({ port: env.PORT }, "HTTP server listening");
+  startDailyPotdCron();
 });
 
 async function shutdown(signal: string): Promise<void> {

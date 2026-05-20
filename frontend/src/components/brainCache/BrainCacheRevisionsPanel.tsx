@@ -134,7 +134,7 @@ export function BrainCacheRevisionsPanel({
           </Box>
         ) : (
           <>
-            <Box sx={{ maxHeight: LIST_MAX, overflowY: "auto" }}>
+            <Box className="app-scroll" sx={{ maxHeight: LIST_MAX, overflowY: "auto" }}>
               {visibleTasks.map((task, i) => {
                 const daysOverdue =
                   variant === "overdue" ? utcDaysBeforeToday(task.dueDate, todayKey) : undefined;

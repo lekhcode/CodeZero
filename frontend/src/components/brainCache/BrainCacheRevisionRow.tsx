@@ -63,7 +63,7 @@ export function BrainCacheRevisionRow({
             sx={{
               fontSize: "12px",
               color: miui.textMuted,
-              fontFamily: '"JetBrains Mono", monospace',
+              fontFamily: "var(--font-number)",
               fontWeight: 400,
             }}
           >

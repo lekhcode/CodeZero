@@ -66,6 +66,15 @@ function parsePositiveInt(name: string, fallback: number): number {
   return Math.floor(n);
 }
 
+function parseBoolean(name: string, fallback: boolean): boolean {
+  const raw = process.env[name];
+  if (raw === undefined || raw === "") return fallback;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === "true" || normalized === "1" || normalized === "yes") return true;
+  if (normalized === "false" || normalized === "0" || normalized === "no") return false;
+  throw new Error(`Invalid ${name}: ${raw} (use true/false)`);
+}
+
 export const env = {
   NODE_ENV: nodeEnv,
   isProduction,
@@ -99,4 +108,29 @@ export const env = {
   GITHUB_CLIENT_SECRET: (process.env["GITHUB_CLIENT_SECRET"] ?? "").trim(),
   /** Browser origin for OAuth redirects (no trailing slash) */
   FRONTEND_URL: (process.env["FRONTEND_URL"] ?? "http://localhost:5173").replace(/\/$/, ""),
+  /**
+   * Daily LeetCode POTD sync cron (same logic as GET /api/v1/daily-problem).
+   * Enabled by default in production; off in development unless explicitly set.
+   */
+  DAILY_POTD_CRON_ENABLED: parseBoolean("DAILY_POTD_CRON_ENABLED", isProduction),
+  DAILY_POTD_CRON: {
+    /** Default: 06:00 every day */
+    expression: (process.env["DAILY_POTD_CRON_EXPRESSION"] ?? "0 6 * * *").trim(),
+    timezone: (process.env["DAILY_POTD_CRON_TIMEZONE"] ?? "Asia/Kolkata").trim(),
+  },
+  /** Resend API key — when set, OTP emails are sent unless EMAIL_OTP_LOG_CONSOLE=true */
+  RESEND_API_KEY: (process.env["RESEND_API_KEY"] ?? "").trim(),
+  EMAIL_FROM: (process.env["EMAIL_FROM"] ?? "CodeZero <onboarding@resend.dev>").trim(),
+  OTP_EXPIRY_MINUTES: parsePositiveInt("OTP_EXPIRY_MINUTES", 10),
+  OTP_MAX_ATTEMPTS: parsePositiveInt("OTP_MAX_ATTEMPTS", 5),
+  OTP_RESEND_COOLDOWN_SEC: parsePositiveInt("OTP_RESEND_COOLDOWN_SEC", 60),
+  OTP_RATE_LIMIT_PER_HOUR: parsePositiveInt("OTP_RATE_LIMIT_PER_HOUR", 8),
+  /**
+   * When true, OTP codes are logged to the server console instead of sending via Resend.
+   * Defaults to true in dev only when RESEND_API_KEY is unset; false when the key is present.
+   */
+  EMAIL_OTP_LOG_CONSOLE: parseBoolean(
+    "EMAIL_OTP_LOG_CONSOLE",
+    !isProduction && (process.env["RESEND_API_KEY"] ?? "").trim() === "",
+  ),
 } as const;

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Box, Button, Typography, alpha } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import ExpandLessRoundedIcon from "@mui/icons-material/ExpandLessRounded";
 import { motion } from "framer-motion";
@@ -48,6 +48,7 @@ export function ProblemTopicTagBar({
   return (
     <Box>
       <Box
+        className={expanded ? undefined : "app-scroll"}
         sx={{
           display: "flex",
           flexWrap: expanded ? "wrap" : "nowrap",
@@ -55,11 +56,6 @@ export function ProblemTopicTagBar({
           alignItems: "center",
           overflowX: expanded ? "visible" : "auto",
           pb: 0.5,
-          "&::-webkit-scrollbar": { height: 6 },
-          "&::-webkit-scrollbar-thumb": {
-            bgcolor: alpha(miui.text, 0.12),
-            borderRadius: 3,
-          },
         }}
       >
         {visible.map((tag) => {
@@ -90,7 +86,7 @@ export function ProblemTopicTagBar({
                 color: active ? miui.primary : miui.textMuted,
                 fontWeight: active ? 600 : 500,
                 fontSize: "0.6875rem",
-                fontFamily: '"JetBrains Mono", monospace',
+                fontFamily: "var(--font-number)",
               }}
             >
               <span style={{ whiteSpace: "nowrap" }}>{tag.name}</span>
@@ -101,7 +97,7 @@ export function ProblemTopicTagBar({
                   fontSize: "0.6875rem",
                   fontWeight: 500,
                   fontVariantNumeric: "tabular-nums",
-                  fontFamily: '"JetBrains Mono", monospace',
+                  fontFamily: "var(--font-number)",
                   background: miui.bg,
                   color: miui.textMuted,
                 }}

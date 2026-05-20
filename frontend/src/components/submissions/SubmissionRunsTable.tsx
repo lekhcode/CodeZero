@@ -15,14 +15,14 @@ dayjs.extend(relativeTime);
 const GRID_COLS = "minmax(0, 1fr) 108px 64px 88px 20px";
 
 const VERDICT_COLOR: Record<SubmissionStatus, string> = {
-  ACCEPTED: "#22C55E",
-  WRONG_ANSWER: "#EF4444",
-  RUNTIME_ERROR: "#F59E0B",
-  COMPILATION_ERROR: "#8B5CF6",
-  TIME_LIMIT_EXCEEDED: "#E8834A",
-  INTERNAL_ERROR: "#94A3B8",
-  QUEUED: "#94A3B8",
-  RUNNING: "#0EA5E9",
+  ACCEPTED: miui.success,
+  WRONG_ANSWER: miui.danger,
+  RUNTIME_ERROR: miui.caution,
+  COMPILATION_ERROR: miui.accent,
+  TIME_LIMIT_EXCEEDED: miui.caution,
+  INTERNAL_ERROR: miui.textMuted,
+  QUEUED: miui.textMuted,
+  RUNNING: miui.accent,
 };
 
 const VERDICT_SHORT: Record<SubmissionStatus, string> = {

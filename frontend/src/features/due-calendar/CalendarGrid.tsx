@@ -90,6 +90,7 @@ export function CalendarGrid({
       </Box>
 
       <Box
+        className="app-scroll"
         sx={{
           display: "grid",
           gridTemplateColumns: "repeat(7, 1fr)",
@@ -148,7 +149,7 @@ export function CalendarGrid({
                   fontSize: "0.75rem",
                   fontWeight: isSelected ? 700 : 500,
                   lineHeight: 1,
-                  fontFamily: '"JetBrains Mono", monospace',
+                  fontFamily: "var(--font-number)",
                 }}
               >
                 {Number(dateKey.slice(8, 10))}

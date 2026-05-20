@@ -1,26 +1,27 @@
 import { Chip } from "@mui/material";
+import { miui, numberFontFamily } from "@/theme/theme";
 import { formatDifficulty } from "@/utils/difficulty";
 
 const BADGE_STYLES: Record<string, { bg: string; color: string; border: string }> = {
   EASY: {
-    bg: "rgba(74, 222, 128, 0.07)",
-    color: "#4ADE80",
-    border: "rgba(74, 222, 128, 0.16)",
+    bg: miui.successSoft,
+    color: miui.success,
+    border: miui.successBorder,
   },
   MEDIUM: {
-    bg: "rgba(246, 195, 96, 0.07)",
-    color: "#F6C360",
-    border: "rgba(246, 195, 96, 0.16)",
+    bg: miui.cautionSoft,
+    color: miui.caution,
+    border: miui.cautionBorder,
   },
   HARD: {
-    bg: "rgba(252, 129, 129, 0.07)",
-    color: "#FC8181",
-    border: "rgba(252, 129, 129, 0.16)",
+    bg: miui.dangerSoft,
+    color: miui.danger,
+    border: miui.dangerBorder,
   },
   MIXED: {
-    bg: "rgba(155, 127, 234, 0.07)",
-    color: "#9B7FEA",
-    border: "rgba(155, 127, 234, 0.16)",
+    bg: miui.accentSoft,
+    color: miui.textMuted,
+    border: miui.borderStrong,
   },
 };
 
@@ -36,14 +37,14 @@ export function DifficultyChip({ difficulty }: { difficulty: string }) {
         bgcolor: style.bg,
         color: style.color,
         border: `1px solid ${style.border}`,
-        fontFamily: '"JetBrains Mono", monospace',
+        fontFamily: numberFontFamily,
         fontSize: "11px",
-        fontWeight: 400,
+        fontWeight: 500,
         height: "auto",
         py: 0.25,
         px: 0.5,
         borderRadius: "4px",
-        letterSpacing: "0.04em",
+        letterSpacing: "0.02em",
         "& .MuiChip-label": { px: 0.5, py: 0 },
       }}
     />

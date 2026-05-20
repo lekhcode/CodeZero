@@ -79,7 +79,7 @@ export function SubmissionsPage() {
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
         <Button
           component={RouterLink}
-          to="/dashboard"
+          to="/community"
           size="small"
           sx={{ minWidth: 0, px: 1, color: "text.secondary", flexShrink: 0 }}
         >

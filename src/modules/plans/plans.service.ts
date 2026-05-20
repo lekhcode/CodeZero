@@ -3,7 +3,7 @@ import { ApiError } from "../../utils/ApiError.js";
 import type { PlanProblemsResponse } from "./plans.types.js";
 
 /** Study plans with a static JSON list + sync script. */
-export const STUDY_PLAN_SLUGS = ["blind-75", "top-interview-150"] as const;
+export const STUDY_PLAN_SLUGS = ["blind-75", "top-interview-150", "neetcode-150"] as const;
 export type StudyPlanSlug = (typeof STUDY_PLAN_SLUGS)[number];
 
 function isStudyPlanSlug(slug: string): slug is StudyPlanSlug {
@@ -63,4 +63,8 @@ export async function getBlind75PlanProblems(): Promise<PlanProblemsResponse> {
 
 export async function getTopInterview150PlanProblems(): Promise<PlanProblemsResponse> {
   return getPlanProblems("top-interview-150");
+}
+
+export async function getNeetCode150PlanProblems(): Promise<PlanProblemsResponse> {
+  return getPlanProblems("neetcode-150");
 }

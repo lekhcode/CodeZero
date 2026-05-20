@@ -65,10 +65,18 @@ export function ProblemCatalogFilters({
         sx={{
           mb: 1.5,
           "& .MuiOutlinedInput-root": {
-            transition: "border-color 0.15s ease, box-shadow 0.15s ease",
-            "&.Mui-focused": {
-              boxShadow: `0 0 0 3px ${alpha(miui.primary, 0.12)}`,
+            bgcolor: "var(--bg-elevated)",
+            borderRadius: 2,
+            transition: "background-color 0.15s ease",
+            "& fieldset": { border: "none" },
+            "&:hover": {
+              bgcolor: "var(--bg-hover)",
             },
+            "&.Mui-focused": {
+              bgcolor: "var(--bg-active)",
+              boxShadow: "none",
+            },
+            "&.Mui-focused fieldset": { border: "none" },
           },
         }}
       />
