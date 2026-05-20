@@ -20,6 +20,7 @@ export type RegisterResult = {
   user: PublicUser;
   requiresVerification: true;
   message: string;
+  resendCooldownSeconds: number;
 };
 
 export type LoginResult = {

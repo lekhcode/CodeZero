@@ -64,6 +64,8 @@ model UserSchedule {
   active           Boolean           @default(true)
   dailyQuestions   Int?
   difficulty       DifficultyLevel?
+  /** When set (1–2 levels), filters study-plan problems; empty + MIXED = all levels. */
+  difficultyFilters DifficultyLevel[] @default([])
   createdAt        DateTime          @default(now())
 
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)

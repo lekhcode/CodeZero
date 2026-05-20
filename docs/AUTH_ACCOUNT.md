@@ -97,3 +97,42 @@ Models: `User` fields (`username`, `fullName`, `country`, `isEmailVerified`, `up
 ## Email templates
 
 Dark espresso-themed HTML in `src/modules/email/templates/`. Branding, OTP block, expiry note, security footer.
+
+## Test email delivery (Postman / curl)
+
+Set `EMAIL_TEST_SECRET` in `.env` and restart the API. The route is always at `POST /api/v1/dev/email/test`; if the env var is unset you get `503 EMAIL_TEST_NOT_CONFIGURED` instead of `404`.
+
+**Verification template (uses Resend or console mode like production OTP):**
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/dev/email/test" \
+  -H "Content-Type: application/json" \
+  -H "x-email-test-secret: YOUR_EMAIL_TEST_SECRET" \
+  -d "{\"to\":\"you@yourdomain.com\",\"template\":\"verification\"}"
+```
+
+**Plain HTML test:**
+
+```bash
+curl -X POST "http://localhost:3000/api/v1/dev/email/test" \
+  -H "Content-Type: application/json" \
+  -H "x-email-test-secret: YOUR_EMAIL_TEST_SECRET" \
+  -d "{\"to\":\"you@yourdomain.com\",\"template\":\"plain\",\"subject\":\"CodeZero delivery test\"}"
+```
+
+Success response includes `consoleMode` (true when `EMAIL_OTP_LOG_CONSOLE=true`) and `from` sender. For verification template, `sampleOtp` is always `123456` in the test email body (not a real account OTP).
+
+### Resend sandbox vs verified domain
+
+See [RESEND.md](./RESEND.md) for SDK patterns, idempotency keys, and test addresses.
+
+If `EMAIL_FROM` uses `onboarding@resend.dev` (sandbox):
+
+- **`to`** = your Resend account email, or Resend test inboxes like `delivered@resend.dev`
+- Other addresses → `403` `RESEND_SANDBOX_RECIPIENT`
+
+Production (signup OTP to real users):
+
+1. Verify domain at [resend.com/domains](https://resend.com/domains)
+2. `EMAIL_FROM=CodeZero <noreply@your-verified-domain.com>`
+3. Restart API

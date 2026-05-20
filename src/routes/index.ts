@@ -17,6 +17,7 @@ import { compilerRouter } from "../compiler/api/compiler.routes.js";
 import { problemByIdAdminRouter } from "../compiler/api/adminJudge.routes.js";
 import { judgePollRouter } from "../compiler/api/judgePoll.routes.js";
 import { rootRouter } from "./health.routes.js";
+import { emailDevRouter } from "../modules/email/email.dev.routes.js";
 
 /**
  * Aggregates routers so `app.ts` stays small as the API grows.
@@ -45,6 +46,8 @@ apiV1.use("/brain-cache", brainCacheRouter);
 apiV1.use("/due-calendar", dueCalendarRouter);
 apiV1.use("/auto-revisions", autoRevisionsRouter);
 apiV1.use("/forum", forumRouter);
+
+apiV1.use("/dev/email", emailDevRouter);
 
 routes.use("/api/v1", apiV1);
 routes.use(rootRouter);

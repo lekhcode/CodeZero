@@ -39,6 +39,7 @@ function buildStudyPlanAssignment(
     createdAt: Date;
     dailyQuestions: number | null;
     difficulty: DifficultyLevel | null;
+    difficultyFilters: DifficultyLevel[];
     template: {
       slug: string;
       name: string;
@@ -58,7 +59,11 @@ function buildStudyPlanAssignment(
 
   const dailyCount = schedule.dailyQuestions ?? schedule.template.defaultCount ?? 1;
   const dayIndex = computePlanDayIndex(schedule.createdAt);
-  const filtered = filterPlanProblemsByDifficulty(planRows, schedule.difficulty);
+  const filtered = filterPlanProblemsByDifficulty(
+    planRows,
+    schedule.difficulty,
+    schedule.difficultyFilters,
+  );
   const slice = sliceStudyPlanForDay({
     rows: filtered,
     dayIndex,
@@ -182,6 +187,7 @@ export async function getTodayAssignmentsForUser(userId: string): Promise<TodayA
           createdAt: schedule.createdAt,
           dailyQuestions: schedule.dailyQuestions,
           difficulty: schedule.difficulty,
+          difficultyFilters: schedule.difficultyFilters ?? [],
           templateId: schedule.template.id,
           template: schedule.template,
         },

@@ -1,9 +1,18 @@
 /**
- * Seeds community forum with realistic posts, comments, and likes.
- * Run: npm run db:seed:forum
+ * Seeds 22 community users + forum posts, comments, post/comment likes.
+ *
+ * Run with SSH tunnel open, e.g. `ssh -L 5433:127.0.0.1:5432 user@server`
+ * Uses repo root `.env.seed` (port 5433 when local Postgres uses 5432).
+ *
+ * Re-run content when posts already exist:
+ *   set SEED_FORUM_FORCE=true && npm run db:seed:forum
+ *
+ * Seed login password for all @community.dev users: ForumSeed!2026
  */
-import "dotenv/config";
 import bcrypt from "bcrypt";
+import { loadSeedEnv } from "../scripts/load-seed-env.js";
+
+loadSeedEnv();
 import { AuthProvider, ForumPostType, PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
@@ -37,7 +46,22 @@ const USERS: SeedUser[] = [
   { email: "amit.system@community.dev", name: "Amit Joshi" },
   { email: "nisha.bs@community.dev", name: "Nisha Gupta" },
   { email: "rahul.roadmap@community.dev", name: "Rahul Verma" },
+  { email: "tanya.heap@community.dev", name: "Tanya Kapoor" },
+  { email: "leo.stacks@community.dev", name: "Leo Fernandez" },
+  { email: "isha.trees@community.dev", name: "Isha Menon" },
+  { email: "dev.patterns@community.dev", name: "Dev Malhotra" },
+  { email: "zara.greedy@community.dev", name: "Zara Khan" },
+  { email: "omkar.backtrack@community.dev", name: "Omkar Rao" },
+  { email: "lisa.trie@community.dev", name: "Lisa Chen" },
+  { email: "harsh.mock@community.dev", name: "Harsh Agarwal" },
+  { email: "maya.revision@community.dev", name: "Maya Bose" },
+  { email: "yash.contest@community.dev", name: "Yash Pillai" },
 ];
+
+function usernameFromEmail(email: string): string {
+  const local = email.split("@")[0] ?? "user";
+  return local.replace(/\./g, "_").toLowerCase();
+}
 
 const POSTS: SeedPost[] = [
   {
@@ -255,22 +279,35 @@ async function main(): Promise<void> {
   const userByEmail = new Map<string, string>();
 
   for (const u of USERS) {
+    const username = usernameFromEmail(u.email);
     const row = await prisma.user.upsert({
       where: { email: u.email },
       create: {
         email: u.email,
         name: u.name,
+        username,
+        fullName: u.name,
         provider: AuthProvider.EMAIL,
         password: passwordHash,
+        isEmailVerified: true,
       },
-      update: { name: u.name },
+      update: {
+        name: u.name,
+        fullName: u.name,
+        isEmailVerified: true,
+      },
     });
     userByEmail.set(u.email, row.id);
   }
 
+  console.log(`Upserted ${USERS.length} seed users (password: ForumSeed!2026).`);
+
+  const forceSeed = process.env["SEED_FORUM_FORCE"] === "true";
   const existingCount = await prisma.forumPost.count();
-  if (existingCount >= 10) {
-    console.log(`Forum already has ${existingCount} posts — skipping content seed.`);
+  if (!forceSeed && existingCount >= 10) {
+    console.log(
+      `Forum already has ${existingCount} posts — skipping content seed. Set SEED_FORUM_FORCE=true to add anyway.`,
+    );
     return;
   }
 
@@ -301,7 +338,7 @@ async function main(): Promise<void> {
       const commentAuthor =
         USERS[(c + p.daysAgo) % USERS.length]!;
       const commentAuthorId = userByEmail.get(commentAuthor.email)!;
-      await prisma.forumComment.create({
+      const comment = await prisma.forumComment.create({
         data: {
           postId: post.id,
           authorId: commentAuthorId,
@@ -310,6 +347,16 @@ async function main(): Promise<void> {
           createdAt: new Date(createdAt.getTime() + (c + 1) * 3600_000),
         },
       });
+
+      const commentLikers = USERS.filter((_, i) => (i + c + p.daysAgo) % 4 !== 0).slice(0, 4);
+      for (const liker of commentLikers) {
+        const likerId = userByEmail.get(liker.email)!;
+        await prisma.forumCommentLike
+          .create({
+            data: { userId: likerId, commentId: comment.id },
+          })
+          .catch(() => undefined);
+      }
     }
 
     await prisma.forumPost.update({
@@ -328,7 +375,18 @@ async function main(): Promise<void> {
     }
   }
 
-  console.log(`Seeded ${postIds.length} forum posts with comments and likes.`);
+  const [userCount, postCount, commentCount, postLikeCount, commentLikeCount] =
+    await Promise.all([
+      prisma.user.count({ where: { email: { endsWith: "@community.dev" } } }),
+      prisma.forumPost.count(),
+      prisma.forumComment.count(),
+      prisma.forumPostLike.count(),
+      prisma.forumCommentLike.count(),
+    ]);
+
+  console.log(
+    `Seeded ${postIds.length} forum posts with comments and likes. Totals: users@${String(userCount)} posts=${String(postCount)} comments=${String(commentCount)} postLikes=${String(postLikeCount)} commentLikes=${String(commentLikeCount)}`,
+  );
 }
 
 void main()

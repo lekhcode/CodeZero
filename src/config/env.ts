@@ -133,4 +133,9 @@ export const env = {
     "EMAIL_OTP_LOG_CONSOLE",
     !isProduction && (process.env["RESEND_API_KEY"] ?? "").trim() === "",
   ),
+  /**
+   * Secret for `POST /api/v1/dev/email/test` (header `x-email-test-secret`).
+   * Set in `.env` to enable Postman/curl delivery checks without going through signup.
+   */
+  EMAIL_TEST_SECRET: (process.env["EMAIL_TEST_SECRET"] ?? "").trim(),
 } as const;

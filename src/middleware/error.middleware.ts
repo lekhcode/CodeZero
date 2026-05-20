@@ -38,19 +38,20 @@ function buildClientErrorPayload(err: unknown, status: number): Record<string, u
   }
 
   if (status >= 500) {
-    if (!env.isProduction && err instanceof Error && err.message.trim() !== "") {
-      return {
-        success: false as const,
-        error: {
-          message: err.message,
-          code: "INTERNAL_ERROR",
-          hint: "Detailed message shown because NODE_ENV is not production. Check API logs for the full stack.",
-        },
-      };
+    const message =
+      err instanceof Error && err.message.trim() !== ""
+        ? err.message
+        : "Internal Server Error";
+    const errorObj: Record<string, unknown> = {
+      message,
+      code: "INTERNAL_ERROR",
+    };
+    if (!env.isProduction && err instanceof Error && err.stack !== undefined) {
+      errorObj["stack"] = err.stack;
     }
     return {
       success: false as const,
-      error: { message: "Internal Server Error", code: "INTERNAL_ERROR" },
+      error: errorObj,
     };
   }
 
@@ -81,10 +82,12 @@ function buildClientErrorPayload(err: unknown, status: number): Record<string, u
  * Legacy `HttpError` remains supported for older call sites.
  */
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  console.error("GLOBAL ERROR =>", err);
+
   const status = resolveStatus(err);
   const body = buildClientErrorPayload(err, status);
 
-  if (status >= 500 && !(err instanceof ApiError)) {
+  if (status >= 500) {
     logger.error({ err, status }, "unhandled server error");
   }
 

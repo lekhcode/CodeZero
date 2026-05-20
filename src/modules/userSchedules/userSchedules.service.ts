@@ -19,10 +19,49 @@ type TemplateRuleRow = {
  * Maps template flags + schedule type into persisted `dailyQuestions` / `difficulty`.
  * POTD is special-cased globally (no per-user count/difficulty knobs).
  */
+const LEVELS: DifficultyLevel[] = ["EASY", "MEDIUM", "HARD"];
+
+function normalizeDifficulties(input: CreateUserScheduleBody): DifficultyLevel[] | undefined {
+  if (input.difficulties !== undefined && input.difficulties.length > 0) {
+    return [...new Set(input.difficulties)];
+  }
+  if (
+    input.difficulty !== undefined &&
+    input.difficulty !== "MIXED" &&
+    LEVELS.includes(input.difficulty)
+  ) {
+    return [input.difficulty];
+  }
+  if (input.difficulty === "MIXED") {
+    return [...LEVELS];
+  }
+  return undefined;
+}
+
+function resolveDifficultyFields(
+  levels: DifficultyLevel[] | undefined,
+): { difficulty: DifficultyLevel | null; difficultyFilters: DifficultyLevel[] } {
+  if (levels === undefined || levels.length === 0) {
+    return { difficulty: null, difficultyFilters: [] };
+  }
+  const unique = [...new Set(levels)];
+  if (unique.length >= 3) {
+    return { difficulty: "MIXED", difficultyFilters: [] };
+  }
+  if (unique.length === 1) {
+    return { difficulty: unique[0]!, difficultyFilters: [] };
+  }
+  return { difficulty: "MIXED", difficultyFilters: unique };
+}
+
 function resolveScheduleFields(
   template: TemplateRuleRow,
   input: CreateUserScheduleBody,
-): { dailyQuestions: number | null; difficulty: DifficultyLevel | null } {
+): {
+  dailyQuestions: number | null;
+  difficulty: DifficultyLevel | null;
+  difficultyFilters: DifficultyLevel[];
+} {
   if (template.type === ScheduleType.DAILY_POTD) {
     if (input.dailyQuestions !== undefined) {
       throw ApiError.badRequest("This schedule does not support dailyQuestions");
@@ -33,10 +72,14 @@ function resolveScheduleFields(
     return {
       dailyQuestions: template.defaultCount ?? 1,
       difficulty: null,
+      difficultyFilters: [],
     };
   }
 
-  if (!template.allowsDifficulty && input.difficulty !== undefined) {
+  if (
+    !template.allowsDifficulty &&
+    (input.difficulty !== undefined || input.difficulties !== undefined)
+  ) {
     throw ApiError.badRequest("This template does not support difficulty");
   }
   if (!template.allowsCount && input.dailyQuestions !== undefined) {
@@ -46,18 +89,24 @@ function resolveScheduleFields(
   let dailyQuestions: number | null = null;
   if (template.allowsCount) {
     if (input.dailyQuestions === undefined) {
-      throw ApiError.badRequest("dailyQuestions is required for this template (1–5)");
+      throw ApiError.badRequest("dailyQuestions is required for this template (1–6)");
     }
     dailyQuestions = input.dailyQuestions;
   } else {
     dailyQuestions = template.defaultCount ?? null;
   }
 
-  const difficulty: DifficultyLevel | null = template.allowsDifficulty
-    ? (input.difficulty ?? null)
-    : null;
+  if (!template.allowsDifficulty) {
+    return { dailyQuestions, difficulty: null, difficultyFilters: [] };
+  }
 
-  return { dailyQuestions, difficulty };
+  const levels = normalizeDifficulties(input);
+  if (levels === undefined) {
+    throw ApiError.badRequest("Select at least one difficulty (Easy, Medium, or Hard)");
+  }
+
+  const { difficulty, difficultyFilters } = resolveDifficultyFields(levels);
+  return { dailyQuestions, difficulty, difficultyFilters };
 }
 
 export async function listForUser(userId: string) {
@@ -88,7 +137,7 @@ export async function createForUser(userId: string, input: CreateUserScheduleBod
     throw ApiError.notFound("Schedule template not found");
   }
 
-  const { dailyQuestions, difficulty } = resolveScheduleFields(template, input);
+  const { dailyQuestions, difficulty, difficultyFilters } = resolveScheduleFields(template, input);
 
   const existing = await prisma.userSchedule.findUnique({
     where: { userId_templateId: { userId, templateId: template.id } },
@@ -112,6 +161,7 @@ export async function createForUser(userId: string, input: CreateUserScheduleBod
         active: true,
         dailyQuestions,
         difficulty,
+        difficultyFilters,
       },
       include: {
         template: {

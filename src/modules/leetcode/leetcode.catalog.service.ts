@@ -1,4 +1,4 @@
-import { DifficultyLevel, type Prisma } from "@prisma/client";
+import { DifficultyLevel, Prisma, type Prisma as PrismaTypes } from "@prisma/client";
 import { prisma } from "../../config/prisma.js";
 import type { ListProblemsQuery } from "./leetcode.catalog.validation.js";
 import {
@@ -30,8 +30,8 @@ export type ProblemCatalogPage = {
   solvedCount?: number;
 };
 
-function buildWhere(query: ListProblemsQuery): Prisma.ProblemWhereInput {
-  const and: Prisma.ProblemWhereInput[] = [];
+function buildWhere(query: ListProblemsQuery): PrismaTypes.ProblemWhereInput {
+  const and: PrismaTypes.ProblemWhereInput[] = [];
 
   if (!query.includePremium) {
     and.push({ isPremium: false });
@@ -50,11 +50,11 @@ function buildWhere(query: ListProblemsQuery): Prisma.ProblemWhereInput {
 
 /** Broad DB pre-filter so flexible in-memory match has a candidate set. */
 function buildSearchPrefetchWhere(
-  baseWhere: Prisma.ProblemWhereInput,
+  baseWhere: PrismaTypes.ProblemWhereInput,
   search: string,
-): Prisma.ProblemWhereInput {
+): PrismaTypes.ProblemWhereInput {
   const tokens = tokenizeSearchQuery(search);
-  const or: Prisma.ProblemWhereInput[] = [
+  const or: PrismaTypes.ProblemWhereInput[] = [
     { title: { contains: search.trim(), mode: "insensitive" } },
     { slug: { contains: search.trim(), mode: "insensitive" } },
   ];
@@ -90,7 +90,7 @@ type ProblemSearchRow = {
 
 async function listProblemCatalogWithFlexibleSearch(
   query: ListProblemsQuery,
-  baseWhere: Prisma.ProblemWhereInput,
+  baseWhere: PrismaTypes.ProblemWhereInput,
   userId?: string,
 ): Promise<ProblemCatalogPage> {
   const search = query.search!.trim();
@@ -143,7 +143,7 @@ async function listProblemCatalogWithFlexibleSearch(
       .filter((row): row is NonNullable<typeof row> => row !== undefined),
   );
 
-  const searchWhere: Prisma.ProblemWhereInput = {
+  const searchWhere: PrismaTypes.ProblemWhereInput = {
     AND: [baseWhere, { id: { in: matched.map((r) => r.id) } }],
   };
   const enriched = await enrichCatalogPage(userId, searchWhere, baseItems);
@@ -202,7 +202,7 @@ function mapRowToCatalogItem(
 
 async function enrichCatalogPage(
   userId: string | undefined,
-  where: Prisma.ProblemWhereInput,
+  where: PrismaTypes.ProblemWhereInput,
   items: ProblemCatalogItem[],
 ): Promise<{ items: ProblemCatalogItem[]; solvedCount?: number }> {
   if (userId === undefined) {
@@ -254,26 +254,46 @@ function shuffleInPlace<T>(array: T[]): void {
   }
 }
 
+function isSimplePremiumOnlyWhere(where: PrismaTypes.ProblemWhereInput): boolean {
+  const keys = Object.keys(where);
+  return keys.length === 0 || (keys.length === 1 && where.isPremium === false);
+}
+
 /** Random sample of `limit` problems matching filters (dashboard preview). */
 async function listShuffledProblemCatalog(
-  where: Prisma.ProblemWhereInput,
+  where: PrismaTypes.ProblemWhereInput,
   limit: number,
   userId?: string,
 ): Promise<ProblemCatalogPage> {
-  const [total, idRows] = await Promise.all([
-    prisma.problem.count({ where }),
-    prisma.problem.findMany({
-      where,
-      select: { id: true },
-    }),
-  ]);
+  const total = await prisma.problem.count({ where });
 
-  if (total === 0 || idRows.length === 0) {
+  if (total === 0) {
     return { items: [], page: 1, limit, total: 0, totalPages: 0 };
   }
 
-  shuffleInPlace(idRows);
-  const pickedIds = idRows.slice(0, limit).map((r) => r.id);
+  let pickedIds: string[];
+
+  if (isSimplePremiumOnlyWhere(where) && total > limit + 50) {
+    const premiumClause =
+      where.isPremium === false ? Prisma.sql`WHERE "isPremium" = false` : Prisma.empty;
+    const idRows = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM problems
+      ${premiumClause}
+      ORDER BY RANDOM()
+      LIMIT ${limit}
+    `;
+    pickedIds = idRows.map((r) => r.id);
+  } else {
+    const idRows = await prisma.problem.findMany({
+      where,
+      select: { id: true },
+    });
+    if (idRows.length === 0) {
+      return { items: [], page: 1, limit, total: 0, totalPages: 0 };
+    }
+    shuffleInPlace(idRows);
+    pickedIds = idRows.slice(0, limit).map((r) => r.id);
+  }
 
   const rows = await prisma.problem.findMany({
     where: { id: { in: pickedIds } },
@@ -360,7 +380,7 @@ export type CatalogStats = {
   hard: number;
 };
 
-function premiumWhere(includePremium: boolean): Prisma.ProblemWhereInput {
+function premiumWhere(includePremium: boolean): PrismaTypes.ProblemWhereInput {
   return includePremium ? {} : { isPremium: false };
 }
 

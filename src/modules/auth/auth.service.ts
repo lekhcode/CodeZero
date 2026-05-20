@@ -97,12 +97,21 @@ export async function registerUser(input: RegisterBody): Promise<RegisterResult>
       select: USER_PUBLIC_SELECT,
     });
 
-    await sendEmailVerificationOtp(created.id, created.email);
+    try {
+      await sendEmailVerificationOtp(created.id, created.email);
+    } catch (emailErr) {
+      await prisma.user.delete({ where: { id: created.id } }).catch(() => undefined);
+      logger.error({ err: emailErr, userId: created.id }, "register: verification email failed");
+      throw new ApiError(503, "Could not send verification email. Please try again.", {
+        code: "EMAIL_SEND_FAILED",
+      });
+    }
 
     return {
       user: toPublicUser(created),
       requiresVerification: true,
       message: "Verification code sent to your email",
+      resendCooldownSeconds: env.OTP_RESEND_COOLDOWN_SEC,
     };
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -123,7 +132,9 @@ export async function verifyEmail(input: VerifyEmailBody): Promise<VerifyEmailRe
   }
 
   if (user.isEmailVerified) {
-    return establishUserSession(toPublicUser(user));
+    throw new ApiError(400, "This email is already verified. Sign in with your password.", {
+      code: "EMAIL_ALREADY_VERIFIED",
+    });
   }
 
   await verifyUserOtp(user.id, EmailOtpType.VERIFY_EMAIL, input.code);
@@ -137,18 +148,26 @@ export async function verifyEmail(input: VerifyEmailBody): Promise<VerifyEmailRe
   return establishUserSession(toPublicUser(updated));
 }
 
-export async function resendVerificationOtp(input: ResendOtpBody): Promise<{ message: string }> {
+export async function resendVerificationOtp(
+  input: ResendOtpBody,
+): Promise<{ message: string; resendCooldownSeconds: number }> {
   const user = await prisma.user.findUnique({
     where: { email: input.email },
     select: { id: true, email: true, isEmailVerified: true, provider: true },
   });
 
   if (user === null || user.provider !== AuthProvider.EMAIL || user.isEmailVerified) {
-    return { message: "If an account exists, a new code has been sent" };
+    return {
+      message: "If an account exists, a new code has been sent",
+      resendCooldownSeconds: env.OTP_RESEND_COOLDOWN_SEC,
+    };
   }
 
   await sendEmailVerificationOtp(user.id, user.email);
-  return { message: "If an account exists, a new code has been sent" };
+  return {
+    message: "If an account exists, a new code has been sent",
+    resendCooldownSeconds: env.OTP_RESEND_COOLDOWN_SEC,
+  };
 }
 
 export async function loginUser(input: LoginBody): Promise<LoginResult> {
@@ -202,7 +221,7 @@ export async function resetPassword(input: ResetPasswordBody): Promise<{ message
     data: { password: passwordHash, currentAccessToken: null },
   });
 
-  await sendPasswordChangedEmail(user.email);
+  await sendPasswordChangedEmail(user.email, user.id);
   return { message: "Password updated. Sign in with your new password." };
 }
 
@@ -248,7 +267,7 @@ export async function confirmChangePassword(
     select: USER_PUBLIC_SELECT,
   });
 
-  await sendPasswordChangedEmail(updated.email);
+  await sendPasswordChangedEmail(updated.email, updated.id);
   return establishUserSession(toPublicUser(updated));
 }
 

@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
+import { AuthProvider } from "@prisma/client";
 import { prisma } from "../config/prisma.js";
 import { verifyAccessToken } from "../config/jwt.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -26,7 +27,13 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     const payload = verifyAccessToken(token);
     const user = await prisma.user.findUnique({
       where: { id: payload.sub },
-      select: { id: true, email: true, currentAccessToken: true },
+      select: {
+        id: true,
+        email: true,
+        currentAccessToken: true,
+        isEmailVerified: true,
+        provider: true,
+      },
     });
     if (user === null) {
       throw ApiError.unauthorized("User not found");
@@ -34,6 +41,12 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
 
     if (!tokensEqual(token, user.currentAccessToken)) {
       throw ApiError.unauthorized("Unauthorized");
+    }
+
+    if (user.provider === AuthProvider.EMAIL && !user.isEmailVerified) {
+      throw new ApiError(403, "Verify your email before using the app", {
+        code: "EMAIL_NOT_VERIFIED",
+      });
     }
 
     req.user = { id: user.id, email: user.email };

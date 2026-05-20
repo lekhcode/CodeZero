@@ -12,6 +12,7 @@ frontend/
 .env
 .env.local
 .env.*.local
+.env.seed
 
 # Logs
 logs/

@@ -34,7 +34,12 @@ function matchesDifficulty(
 export function filterPlanProblemsByDifficulty(
   rows: TemplateProblemRow[],
   difficulty: DifficultyLevel | null,
+  difficultyFilters: DifficultyLevel[] = [],
 ): TemplateProblemRow[] {
+  if (difficultyFilters.length > 0) {
+    const allowed = new Set(difficultyFilters);
+    return rows.filter((row) => allowed.has(row.problem.difficulty));
+  }
   return rows.filter((row) => matchesDifficulty(row.problem.difficulty, difficulty));
 }
 

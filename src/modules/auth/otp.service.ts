@@ -7,6 +7,7 @@ import { generateOtpCode, hashOtp, otpExpiresAt, verifyOtp } from "../../utils/o
 import {
   sendPasswordResetOtpEmail,
   sendVerificationOtpEmail,
+  type OtpEmailDeliveryContext,
 } from "../email/services/email.service.js";
 
 async function assertResendCooldown(userId: string, type: EmailOtpType): Promise<void> {
@@ -44,11 +45,13 @@ async function invalidatePreviousOtps(userId: string, type: EmailOtpType): Promi
   });
 }
 
+type OtpSendFn = (to: string, code: string, ctx: OtpEmailDeliveryContext) => Promise<void>;
+
 async function createAndDeliverOtp(
   userId: string,
   email: string,
   type: EmailOtpType,
-  send: (to: string, code: string) => Promise<void>,
+  send: OtpSendFn,
 ): Promise<void> {
   await assertResendCooldown(userId, type);
   await assertHourlyOtpRateLimit(userId);
@@ -57,20 +60,33 @@ async function createAndDeliverOtp(
   const code = generateOtpCode();
   const otpHash = await hashOtp(code);
 
-  await prisma.emailOtp.create({
+  const record = await prisma.emailOtp.create({
     data: {
       userId,
       otpHash,
       type,
       expiresAt: otpExpiresAt(env.OTP_EXPIRY_MINUTES),
     },
+    select: { id: true },
   });
 
   if (env.EMAIL_OTP_LOG_CONSOLE) {
-    logger.info({ userId, type, otp: code }, "OTP (dev console)");
+    logger.info({ userId, type, otp: code, otpId: record.id }, "OTP (dev console)");
   }
 
-  await send(email, code);
+  const ctx: OtpEmailDeliveryContext = { userId, otpId: record.id, type };
+
+  try {
+    await send(email, code, ctx);
+  } catch (err) {
+    logger.error({ err, userId, type, otpId: record.id }, "otp: email delivery failed");
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new ApiError(503, "Could not send email. Please try again shortly.", {
+      code: "EMAIL_SEND_FAILED",
+    });
+  }
 }
 
 export async function sendEmailVerificationOtp(userId: string, email: string): Promise<void> {

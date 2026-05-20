@@ -22,6 +22,7 @@
     "db:studio": "node scripts/check-node-version.mjs && prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:forum": "tsx prisma/seed-forum.ts",
+    "seed:server:full": "tsx scripts/seed-server-full.ts",
     "db:backfill:usernames": "tsx prisma/backfill-usernames.ts",
     "sync:blind-75": "tsx scripts/sync-study-plan.ts blind-75",
     "sync:top-interview-150": "tsx scripts/sync-study-plan.ts top-interview-150",
