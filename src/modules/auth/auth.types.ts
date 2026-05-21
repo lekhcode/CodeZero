@@ -12,6 +12,7 @@ export type PublicUser = {
   gender: "MALE" | "FEMALE" | "NON_BINARY" | "OTHER" | "PREFER_NOT_TO_SAY" | null;
   avatar: string | null;
   isEmailVerified: boolean;
+  firstTimeLogin: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

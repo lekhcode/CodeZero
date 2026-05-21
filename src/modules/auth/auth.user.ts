@@ -11,6 +11,7 @@ export const USER_PUBLIC_SELECT = {
   gender: true,
   avatar: true,
   isEmailVerified: true,
+  firstTimeLogin: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -25,11 +26,15 @@ export type UserPublicRow = {
   gender: Gender | null;
   avatar: string | null;
   isEmailVerified: boolean;
+  firstTimeLogin: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
 
 export function toPublicUser(row: UserPublicRow): PublicUser {
+  // Always emit a boolean — JSON omits `undefined`, which breaks the walkthrough client.
+  const firstTimeLogin = row.firstTimeLogin === true;
+
   return {
     id: row.id,
     email: row.email,
@@ -40,6 +45,7 @@ export function toPublicUser(row: UserPublicRow): PublicUser {
     gender: row.gender,
     avatar: row.avatar,
     isEmailVerified: row.isEmailVerified,
+    firstTimeLogin,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

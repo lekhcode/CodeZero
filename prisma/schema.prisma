@@ -114,6 +114,8 @@ model User {
   /** bcrypt hash — null for OAuth-only accounts */
   password  String?
   isEmailVerified    Boolean  @default(false)
+  /** When true, show the first-run product walkthrough once; set false after Skip or Finish. */
+  firstTimeLogin Boolean @default(true)
   /**
    * Last issued access JWT (single session). `requireAuth` checks Bearer token === this value.
    */

@@ -25,6 +25,8 @@ export const updateProfileBodySchema = z.object({
   country: z.string().trim().max(80).optional().nullable(),
   gender: genderSchema,
   name: z.string().trim().max(80).optional().nullable(),
+  /** Dismiss first-run walkthrough (Skip / Finish only). */
+  firstTimeLogin: z.literal(false).optional(),
 });
 
 export type CheckUsernameQuery = z.infer<typeof checkUsernameQuerySchema>;
