@@ -6,6 +6,7 @@ import {
   changePasswordConfirmBodySchema,
   forgotPasswordBodySchema,
   googleAuthBodySchema,
+  oauthCompleteRegistrationBodySchema,
   loginBodySchema,
   registerBodySchema,
   resendOtpBodySchema,
@@ -67,6 +68,12 @@ authRouter.post(
   "/google",
   validateBody(googleAuthBodySchema),
   asyncHandler(authController.googleAuth),
+);
+
+authRouter.post(
+  "/oauth/complete-registration",
+  validateBody(oauthCompleteRegistrationBodySchema),
+  asyncHandler(authController.oauthCompleteRegistration),
 );
 
 authRouter.get("/github/callback", asyncHandler(authController.githubCallback));

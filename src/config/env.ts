@@ -23,15 +23,77 @@ if (!Number.isFinite(port) || port <= 0) {
 }
 
 /**
- * CORS: optional comma-separated allowlist.
- * In development, leaving this unset is convenient (browser + API on different ports).
- * In production, set explicit origins.
+ * CORS allowlist: `CORS_ORIGIN` (comma-separated) + `FRONTEND_URL` + common Vite dev origins.
  */
 const corsOriginsRaw = process.env["CORS_ORIGIN"];
-const corsOrigins =
-  corsOriginsRaw === undefined || corsOriginsRaw === ""
-    ? []
-    : corsOriginsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+const frontendUrl = (process.env["FRONTEND_URL"] ?? "http://localhost:5173").replace(/\/$/, "");
+
+function buildCorsAllowlist(): string[] {
+  const fromEnv =
+    corsOriginsRaw === undefined || corsOriginsRaw === ""
+      ? []
+      : corsOriginsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+  const set = new Set<string>([...fromEnv, frontendUrl]);
+  if (!isProduction) {
+    // 5174+ when Vite falls back because :5173 is already in use
+    for (const port of [5173, 5174, 5175, 4173, 3000]) {
+      set.add(`http://localhost:${port}`);
+      set.add(`http://127.0.0.1:${port}`);
+    }
+  }
+  return [...set];
+}
+
+const corsAllowlist = buildCorsAllowlist();
+
+function trimEnvOptional(name: string): string {
+  return (process.env[name] ?? "").trim();
+}
+
+/** Dev prefers GITHUB_*_LOCAL when both id and secret are set. */
+function resolveGithubOAuth(): {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+} {
+  const defaultRedirect = `${frontendUrl}/auth/github/callback`;
+
+  if (!isProduction) {
+    const localId = trimEnvOptional("GITHUB_CLIENT_ID_LOCAL");
+    const localSecret = trimEnvOptional("GITHUB_CLIENT_SECRET_LOCAL");
+    if (localId !== "" && localSecret !== "") {
+      return {
+        clientId: localId,
+        clientSecret: localSecret,
+        redirectUri: trimEnvOptional("GITHUB_REDIRECT_URI_LOCAL") || defaultRedirect,
+      };
+    }
+  }
+
+  return {
+    clientId: trimEnvOptional("GITHUB_CLIENT_ID"),
+    clientSecret: trimEnvOptional("GITHUB_CLIENT_SECRET"),
+    redirectUri: trimEnvOptional("GITHUB_REDIRECT_URI") || defaultRedirect,
+  };
+}
+
+const githubOAuth = resolveGithubOAuth();
+
+function buildGithubRedirectAllowlist(): string[] {
+  const set = new Set<string>([
+    githubOAuth.redirectUri,
+    `${frontendUrl}/auth/github/callback`,
+  ]);
+  if (!isProduction) {
+    for (const port of [5173, 5174, 5175]) {
+      set.add(`http://localhost:${port}/auth/github/callback`);
+      set.add(`http://127.0.0.1:${port}/auth/github/callback`);
+    }
+  }
+  return [...set];
+}
+
+const githubRedirectAllowlist = buildGithubRedirectAllowlist();
 
 /**
  * JWT signing secret. Must be long and random in production (e.g. `openssl rand -base64 32`).
@@ -81,7 +143,8 @@ export const env = {
   PORT: port,
   /** Required once you run migrations / hit the DB */
   DATABASE_URL: requireEnv("DATABASE_URL"),
-  CORS_ORIGINS: corsOrigins,
+  /** Origins allowed for browser cross-origin API calls */
+  CORS_ALLOWLIST: corsAllowlist,
   JWT_SECRET: jwtSecret,
   JWT_EXPIRES_IN: jwtExpiresIn,
   /** BullMQ + compiler workers (isolated execution domain) */
@@ -104,10 +167,13 @@ export const env = {
   LEETCODE_DUMP_DELAY_MS: parsePositiveInt("LEETCODE_DUMP_DELAY_MS", 350),
   /** OAuth — optional until social login is enabled */
   GOOGLE_CLIENT_ID: (process.env["GOOGLE_CLIENT_ID"] ?? "").trim(),
-  GITHUB_CLIENT_ID: (process.env["GITHUB_CLIENT_ID"] ?? "").trim(),
-  GITHUB_CLIENT_SECRET: (process.env["GITHUB_CLIENT_SECRET"] ?? "").trim(),
+  GITHUB_CLIENT_ID: githubOAuth.clientId,
+  GITHUB_CLIENT_SECRET: githubOAuth.clientSecret,
+  /** Default GitHub OAuth redirect (frontend `/auth/github/callback`) */
+  GITHUB_REDIRECT_URI: githubOAuth.redirectUri,
+  GITHUB_REDIRECT_ALLOWLIST: githubRedirectAllowlist,
   /** Browser origin for OAuth redirects (no trailing slash) */
-  FRONTEND_URL: (process.env["FRONTEND_URL"] ?? "http://localhost:5173").replace(/\/$/, ""),
+  FRONTEND_URL: frontendUrl,
   /**
    * Daily LeetCode POTD sync cron (same logic as GET /api/v1/daily-problem).
    * Enabled by default in production; off in development unless explicitly set.

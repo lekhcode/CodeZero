@@ -28,4 +28,15 @@ export type LoginResult = {
   accessToken: string;
 };
 
+export type OAuthPendingRegistrationResult = {
+  status: "pending_registration";
+  pendingToken: string;
+  email: string;
+  suggestedName: string | null;
+  avatar: string | null;
+  provider: "GOOGLE" | "GITHUB";
+};
+
+export type OAuthAuthResult = LoginResult | OAuthPendingRegistrationResult;
+
 export type VerifyEmailResult = LoginResult;

@@ -1,3 +1,4 @@
+import { Gender } from "@prisma/client";
 import { z } from "zod";
 import { validatePassword } from "../../utils/passwordPolicy.js";
 import { isValidUsernameFormat, normalizeUsername } from "../../utils/username.js";
@@ -76,6 +77,24 @@ export type ChangePasswordConfirmBody = z.infer<typeof changePasswordConfirmBody
 
 export const googleAuthBodySchema = z.object({
   credential: z.string().min(1, { message: "Google credential is required" }),
+  intent: z.enum(["login", "register"]),
 });
 
 export type GoogleAuthBody = z.infer<typeof googleAuthBodySchema>;
+
+export const oauthCompleteRegistrationBodySchema = z.object({
+  pendingToken: z.string().min(1, { message: "Registration session is required" }),
+  fullName: z.string().trim().min(1, { message: "Full name is required" }).max(80),
+  country: z.string().trim().min(1, { message: "Country is required" }).max(80),
+  gender: z.nativeEnum(Gender, { message: "Select a gender option" }),
+  username: z
+    .string()
+    .trim()
+    .transform(normalizeUsername)
+    .refine(isValidUsernameFormat, {
+      message: "Username: 3–24 chars, lowercase letters, numbers, underscores only",
+    })
+    .optional(),
+});
+
+export type OAuthCompleteRegistrationBody = z.infer<typeof oauthCompleteRegistrationBodySchema>;
