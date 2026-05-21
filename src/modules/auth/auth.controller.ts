@@ -119,8 +119,14 @@ export async function githubCallback(req: Request, res: Response): Promise<void>
   }
 
   if ("status" in result && result.status === "pending_registration") {
-    const pending = encodeURIComponent(result.pendingToken);
-    res.redirect(`${env.FRONTEND_URL}/register/oauth/complete?pendingToken=${pending}`);
+    const params = new URLSearchParams({
+      pendingToken: result.pendingToken,
+      email: result.email,
+      provider: result.provider,
+    });
+    if (result.suggestedName) params.set("suggestedName", result.suggestedName);
+    if (result.avatar) params.set("avatar", result.avatar);
+    res.redirect(`${env.FRONTEND_URL}/register/oauth/complete?${params.toString()}`);
     return;
   }
 
