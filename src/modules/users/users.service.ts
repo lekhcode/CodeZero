@@ -32,7 +32,21 @@ export async function checkUsernameAvailability(
   return { available, username: normalized };
 }
 
+/** Permanently dismiss first-run walkthrough (Skip / Finish). */
+export async function dismissFirstTimeLogin(userId: string) {
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data: { firstTimeLogin: false },
+    select: USER_PUBLIC_SELECT,
+  });
+  return toPublicUser(updated);
+}
+
 export async function updateUserProfile(userId: string, input: UpdateProfileBody) {
+  if (input.firstTimeLogin === false) {
+    return dismissFirstTimeLogin(userId);
+  }
+
   if (input.username !== undefined) {
     const normalized = normalizeUsername(input.username);
     if (!(await isUsernameAvailable(normalized, userId))) {
