@@ -5,6 +5,7 @@ import type {
   ChangePasswordConfirmBody,
   ForgotPasswordBody,
   GoogleAuthBody,
+  OAuthCompleteRegistrationBody,
   LoginBody,
   RegisterBody,
   ResendOtpBody,
@@ -75,8 +76,24 @@ export async function logout(req: Request, res: Response): Promise<void> {
 
 export async function googleAuth(req: Request, res: Response): Promise<void> {
   const body = req.body as GoogleAuthBody;
-  const result = await authOAuthService.loginWithGoogleCredential(body.credential);
+  const result = await authOAuthService.loginWithGoogleCredential(body.credential, body.intent);
   ApiResponse.success(res, result);
+}
+
+export async function oauthCompleteRegistration(req: Request, res: Response): Promise<void> {
+  const body = req.body as OAuthCompleteRegistrationBody;
+  const result = await authOAuthService.completeOAuthRegistration({
+    pendingToken: body.pendingToken,
+    fullName: body.fullName,
+    country: body.country,
+    gender: body.gender,
+    ...(body.username !== undefined ? { username: body.username } : {}),
+  });
+  ApiResponse.success(res, result);
+}
+
+function parseOAuthIntent(raw: unknown): authOAuthService.OAuthIntent {
+  return raw === "register" ? "register" : "login";
 }
 
 export async function githubCallback(req: Request, res: Response): Promise<void> {
@@ -87,13 +104,27 @@ export async function githubCallback(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const result = await authOAuthService.loginWithGithubCode(code);
+  const redirectUriRaw = req.query["redirect_uri"];
+  const redirectUri =
+    typeof redirectUriRaw === "string" && redirectUriRaw.length > 0 ? redirectUriRaw : undefined;
+
+  const intentRaw = req.query["intent"];
+  const intent = parseOAuthIntent(typeof intentRaw === "string" ? intentRaw : undefined);
+
+  const result = await authOAuthService.loginWithGithubCode(code, redirectUri, intent);
   const format = req.query["format"];
   if (format === "json") {
     ApiResponse.success(res, result);
     return;
   }
 
-  const token = encodeURIComponent(result.accessToken);
+  if ("status" in result && result.status === "pending_registration") {
+    const pending = encodeURIComponent(result.pendingToken);
+    res.redirect(`${env.FRONTEND_URL}/register/oauth/complete?pendingToken=${pending}`);
+    return;
+  }
+
+  const login = result as { accessToken: string };
+  const token = encodeURIComponent(login.accessToken);
   res.redirect(`${env.FRONTEND_URL}/auth/github/success?token=${token}`);
 }

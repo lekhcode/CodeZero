@@ -4,7 +4,7 @@ import { env } from "../config/env.js";
 import { logger } from "../config/logger.js";
 
 /**
- * Browser CORS for local Vite (:5173 / :127.0.0.1) and production frontends.
+ * Browser CORS for local Vite (:5173–:5175 / :127.0.0.1) and production frontends.
  * Prefer empty `VITE_API_BASE_URL` in dev so Vite proxies `/api` (no CORS needed).
  */
 export function createCorsMiddleware(): ReturnType<typeof cors> {

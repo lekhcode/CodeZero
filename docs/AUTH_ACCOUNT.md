@@ -31,7 +31,18 @@ Auth controllers stay thin; Resend is never called from controllers directly.
 2. `POST /api/v1/auth/verify-email` — validates OTP, sets `isEmailVerified: true`, returns JWT session.
 3. `POST /api/v1/auth/resend-otp` — resend verification (generic success message).
 
-Email/password login requires `isEmailVerified`. OAuth users are created verified with an auto-generated username.
+Email/password login requires `isEmailVerified`. OAuth users are created verified with an auto-generated username (no OTP).
+
+## OAuth (Google & GitHub)
+
+| Provider | Frontend | Backend |
+|----------|----------|---------|
+| Google | `VITE_GOOGLE_CLIENT_ID` + `@react-oauth/google` button | `GOOGLE_CLIENT_ID` — `POST /api/v1/auth/google` verifies id token |
+| GitHub | `VITE_GITHUB_CLIENT_ID` (+ `_LOCAL` in dev) | `GITHUB_CLIENT_ID` / `SECRET` (+ `_LOCAL` in dev) |
+
+- **Google Console:** Authorized JavaScript origins (`http://localhost:5173`, production site). Redirect URIs on the API are not used by the current flow.
+- **GitHub OAuth App:** Callback URL = frontend `https://your-site/auth/github/callback` (must match `VITE_GITHUB_REDIRECT_URI` and `GITHUB_REDIRECT_URI`).
+- Dev: when `GITHUB_CLIENT_ID_LOCAL` and `GITHUB_CLIENT_SECRET_LOCAL` are set, the API uses the local GitHub app automatically.
 
 ## OTP security
 
