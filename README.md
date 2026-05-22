@@ -2,7 +2,34 @@
 
 **Schedule-driven DSA infrastructure — not a tutorial API.**
 
+| | |
+|---|---|
+| **Platform** | CodeZero |
+| **Organization** | [LoopCode](mailto:whiletrue.codes@gmail.com) |
+| **Built and maintained by** | LoopCode |
+| **Created by** | Lekh Ray |
+| **Contact** | [whiletrue.codes@gmail.com](mailto:whiletrue.codes@gmail.com) |
+
 CodeZero’s backend powers a structured data-structures-and-algorithms training ecosystem: daily problem generation, template-based study plans, spaced-repetition revision, progress tracking, and a production-grade code execution plane. The system is built as an intentional platform layer — modular domains, versioned HTTP boundaries, and relational models that encode product semantics instead of generic CRUD rows.
+
+**Production domains:** schedules · spaced repetition · Brain Cache · onboarding persistence · authentication · OAuth · daily practice · isolated code execution.
+
+---
+
+## Governance, security, and legal
+
+This repository is **proprietary** software. Viewing does not grant redistribution or commercial deployment rights.
+
+| Document | Purpose |
+|----------|---------|
+| [LICENSE](./LICENSE) | Proprietary license — permitted inspection vs prohibited reuse |
+| [NOTICE.md](./NOTICE.md) | Intellectual property and ownership statement |
+| [SECURITY.md](./SECURITY.md) | Vulnerability disclosure and security philosophy |
+| [PRIVACY_POLICY.md](./PRIVACY_POLICY.md) | OAuth, sessions, schedules, and data practices |
+| [TERMS_OF_SERVICE.md](./TERMS_OF_SERVICE.md) | Acceptable use, API restrictions, liability |
+| [.env.example](./.env.example) | Safe configuration surface — placeholders only |
+
+**Security reports:** [whiletrue.codes@gmail.com](mailto:whiletrue.codes@gmail.com) — see [SECURITY.md](./SECURITY.md). Do not file public issues for vulnerabilities.
 
 ---
 
@@ -174,15 +201,31 @@ This is defensive API design: invalid input never reaches business logic; domain
 
 ## Production infrastructure
 
-| Component | Why it matters |
-|-----------|----------------|
-| **AWS (VPS / EC2)** | Hosts the Node processes, PostgreSQL, and Redis; `scripts/deploy-production.sh` automates pull → `npm ci` → migrate → build → PM2 restart with a build sanity check |
-| **Nginx** | TLS termination, reverse proxy to the API port, static asset separation from the Vite frontend, request size/timeouts at the edge |
-| **PM2** | Keeps `codezero-api` and `codezero-compiler-worker` alive across crashes and deploys; memory restart caps; `pm2 save` / startup for reboot survival |
-| **PostgreSQL** | ACID progress, assignments, and auth state — the system of record |
-| **Redis** | BullMQ backing store for isolated code execution jobs |
-| **Cloudflare** | DNS, CDN, and edge protection in front of Nginx — reduces origin load and adds WAF/DDoS mitigation without changing application code |
-| **Docker** | Compiler worker runs user code in constrained containers (`memory`, `cpus`, `pids` limits from env) |
+Each component exists for a deliberate architectural reason — not checklist DevOps.
+
+| Component | Architectural role |
+|-----------|---------------------|
+| **AWS EC2** | Origin compute for the API, compiler worker, PostgreSQL, and Redis on a controlled VPS footprint. Keeps latency predictable and avoids serverless cold-start complexity for long-running cron and workers. |
+| **PostgreSQL** | ACID system of record for users, schedules, assignments, revision tasks, and judge history. Relational modeling encodes product semantics (enrollment vs template, assignment status, timezone-aware revision). |
+| **Nginx** | TLS termination and reverse proxy in front of Node. Separates static frontend delivery from API upstream, enforces request size/timeouts at the edge, and shields the app from raw internet socket handling. |
+| **PM2** | Supervises `codezero-api` and `codezero-compiler-worker` as separate processes with independent memory limits and restart policy. API stays at **one instance** so in-process POTD cron does not duplicate. |
+| **Redis** | Durable queue backing store for BullMQ — decouples HTTP latency from Docker execution time. |
+| **Cloudflare** | DNS, CDN, and edge DDoS/WAF in front of Nginx. Offloads TLS-adjacent threat surface and reduces origin load without embedding CDN logic in application code. |
+| **Docker** | Sandboxed multi-language compile/run with cgroup limits (`memory`, `cpus`, `pids`) — user code never executes in the API process. |
+| **Google / GitHub OAuth** | Federated identity with server-side token verification and redirect allowlists — secrets live only in host environment, never in the repository. |
+
+### Deploy sequence (production)
+
+```bash
+cp .env.example .env          # configure on server — never commit .env
+npm ci
+npm run db:migrate:deploy
+npm run build
+pm2 start ecosystem.config.cjs
+pm2 save && pm2 startup       # persist across reboot
+```
+
+Prerequisites on the host: Node 20+, PostgreSQL, Redis (`docker compose -f docker-compose.compiler.yml up -d`), Docker CLI for the compiler worker, Nginx + Cloudflare DNS pointed at the instance.
 
 Graceful shutdown on `SIGINT`/`SIGTERM` closes the HTTP server and disconnects Prisma before exit.
 
@@ -316,10 +359,20 @@ Frontend lives in `frontend/` — see `frontend/README.md`.
 
 ## Related documentation
 
+### Platform governance
+
+- [LICENSE](./LICENSE) · [NOTICE.md](./NOTICE.md) · [SECURITY.md](./SECURITY.md)
+- [PRIVACY_POLICY.md](./PRIVACY_POLICY.md) · [TERMS_OF_SERVICE.md](./TERMS_OF_SERVICE.md)
+
+### Engineering
+
 - `src/compiler/docs/architecture.md` — compiler queue, worker, sandbox isolation
 - `src/compiler/docs/README.md` — execution system overview
-- `.env.example` — full configuration surface
+- `.env.example` — configuration reference (no secrets)
+- `ecosystem.config.cjs` — PM2 process definitions
 
 ---
 
-*CodeZero backend — engineered for structured practice, revision, and execution at production depth.*
+**LoopCode** — CodeZero Backend  
+Built and maintained by **LoopCode** · Created by **Lekh Ray**  
+Engineered for structured practice, revision, and execution at production depth.
