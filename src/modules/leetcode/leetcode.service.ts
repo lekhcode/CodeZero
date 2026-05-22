@@ -28,7 +28,10 @@ export async function syncProblemBySlug(slug: string): Promise<{
   if (cached !== null && hasStoredDetail(cached) && hasCompleteStoredExamples(cached)) {
     logger.debug({ slug }, "problem detail served from cache");
     const response = await attachVisibleTestcaseExamples(cached, mapProblemRowToDetailResponse(cached));
-    return { row: cached, response };
+    if (response.examples.length > 0) {
+      return { row: cached, response };
+    }
+    logger.info({ slug }, "cached examples empty after quality filter — re-syncing from LeetCode");
   }
 
   const raw = await fetchQuestionDetailBySlug(slug);
