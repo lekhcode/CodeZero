@@ -78,15 +78,22 @@ export function examplesHaveOutput(examples: ProblemExample[]): boolean {
   return examples.some((e) => e.output.trim().length > 0);
 }
 
-/** Legacy rows stored target (9) as "Output" instead of result indices ([0,1]). */
+/**
+ * Legacy dump rows stored the Two Sum *target* (e.g. 9) as "Output" instead of index pairs.
+ * Do not treat valid single-number answers (binary search index, count, etc.) as legacy when
+ * input uses LeetCode's `param = value` style.
+ */
 export function looksLikeWrongLegacyExample(ex: ProblemExample): boolean {
   const o = ex.output.trim();
   const i = ex.input.trim();
   if (o.length === 0) return false;
   if (!/^-?\d+$/.test(o)) return false;
+
+  // Named parameters (nums = ..., target = ...) — output is a real scalar answer, not a mistaken target.
+  if (/\b[a-zA-Z_]\w*\s*=/.test(i)) return false;
+
   if (i.startsWith("[")) return true;
   if (i.includes("\n")) return true;
-  if (/\btarget\s*=/.test(i) && !o.startsWith("[")) return true;
   if (!i.includes("=")) return true;
   return false;
 }

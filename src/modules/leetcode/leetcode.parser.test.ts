@@ -3,6 +3,7 @@ import {
   enrichExamplesWithJudgeTestcases,
   extractExamplesFromHtml,
   examplesHaveOutput,
+  filterQualityExamples,
   looksLikeWrongLegacyExample,
   resolveProblemExamples,
 } from "./leetcode.parser.js";
@@ -67,6 +68,28 @@ const structuredRow = {
 assert.ok(
   looksLikeWrongLegacyExample({ input: "[2,7,11,15]", output: "9", explanation: "" }),
 );
+assert.ok(
+  !looksLikeWrongLegacyExample({
+    input: "nums = [4,5,6,7,0,1,2], target = 0",
+    output: "4",
+    explanation: "",
+  }),
+);
+assert.ok(
+  !looksLikeWrongLegacyExample({ input: "nums = [1], target = 0", output: "-1", explanation: "" }),
+);
+
+const rotatedHtml = `<p><strong class="example">Example 1:</strong></p>
+<pre><strong>Input:</strong> nums = [4,5,6,7,0,1,2], target = 0
+<strong>Output:</strong> 4
+</pre>`;
+const rotatedResolved = resolveProblemExamples({
+  html: rotatedHtml,
+  exampleTestcases: "[4,5,6,7,0,1,2]\n0",
+  exampleTestcaseList: ["[4,5,6,7,0,1,2]\n0"],
+});
+assert.equal(filterQualityExamples(rotatedResolved).length, 1);
+assert.equal(filterQualityExamples(rotatedResolved)[0]!.output, "4");
 
 const fromDb = readStoredExamples(structuredRow as import("@prisma/client").Problem);
 assert.ok(fromDb !== null);
