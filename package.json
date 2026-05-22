@@ -12,7 +12,7 @@
     "preinstall": "node scripts/check-node-version.mjs",
     "dev": "tsx watch src/server.ts",
     "compiler:worker": "tsx src/compiler/workers/bootstrap.ts",
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/compiler/judge/runtime && cp src/compiler/judge/runtime/*.jar dist/compiler/judge/runtime/",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "db:generate": "node scripts/check-node-version.mjs && prisma generate",
