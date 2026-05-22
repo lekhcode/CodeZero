@@ -1,0 +1,83 @@
+CodeZero Backend — Proprietary License
+========================================
+
+Copyright © LoopCode. All Rights Reserved.
+
+Created by Lekh Ray.
+
+Platform: CodeZero  
+Organization: LoopCode
+
+Official contact: whiletrue.codes@gmail.com
+
+-------------------------------------------------------------------------------
+
+1. GRANT OF LIMITED PERMISSION
+
+Subject to the restrictions below, LoopCode grants you a limited,
+non-exclusive, non-transferable, revocable permission to:
+
+  (a) view this repository and its source code;
+  (b) inspect its architecture, modules, and design for educational or
+      evaluative purposes (e.g. technical interviews, portfolio review,
+      academic study); and
+  (c) run the software locally solely for the purpose of understanding
+      how it works, without deploying it as a competing product or service.
+
+No other rights are granted, whether by implication, estoppel, or otherwise.
+
+-------------------------------------------------------------------------------
+
+2. PROHIBITED USES
+
+Without prior written permission from LoopCode, you may NOT:
+
+  (a) redistribute, sublicense, sell, lease, or otherwise convey any
+      portion of this software or documentation;
+  (b) use this software or its architecture for commercial purposes;
+  (c) clone, fork for public redistribution, rebrand, or deploy a
+      derivative or competing service based on this codebase;
+  (d) remove or alter copyright, ownership, or proprietary notices;
+  (e) claim authorship, ownership, or affiliation with CodeZero or LoopCode;
+  (f) use the CodeZero name, LoopCode branding, or associated marks in
+      connection with any product or service not expressly authorized
+      by LoopCode.
+
+-------------------------------------------------------------------------------
+
+3. INTELLECTUAL PROPERTY
+
+All source code, schemas, API designs, documentation, deployment patterns,
+and architectural decisions in this repository are proprietary intellectual
+property of LoopCode.
+
+This repository is NOT open source. It is not licensed under MIT, Apache,
+GPL, or any other permissive or copyleft license.
+
+-------------------------------------------------------------------------------
+
+4. NO WARRANTY
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. LOOPCODE SHALL NOT
+BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM USE OF
+OR INABILITY TO USE THIS SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+5. TERMINATION
+
+Any permission granted under this license terminates automatically if you
+violate these terms. Upon termination, you must cease all use and destroy
+any copies in your possession.
+
+-------------------------------------------------------------------------------
+
+6. CONTACT
+
+For licensing inquiries, partnership, or written permission requests:
+
+  whiletrue.codes@gmail.com
+
+LoopCode — CodeZero Backend
