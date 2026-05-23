@@ -1,5 +1,10 @@
 /**
  * Calendar scheduling for Smart Auto-Revision (IANA timezone via Intl).
+ *
+ * Phases:
+ * - Daily: due the day after solve (yesterday's solves only in Today).
+ * - Weekly: batch opens on the Mon–Sun week's closing Sunday; visible through the following Sat.
+ * - Monthly: batch enters on the rollover Sunday (weekly close + 8 days).
  */
 
 export type RevisionScheduleDates = {
@@ -34,6 +39,13 @@ export function getDayOfWeek(instant: Date, timeZone: string): number {
   const weekday = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(instant);
   const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   return map[weekday] ?? 0;
+}
+
+/** Day of week for a calendar date key (noon anchor in TZ). */
+export function getDayOfWeekForDateKey(dateKey: string, timeZone: string): number {
+  const { year, month, day } = parseDateKey(dateKey);
+  const noonUtc = zonedNoonToUtc(year, month, day, timeZone);
+  return getDayOfWeek(new Date(noonUtc), timeZone);
 }
 
 /** Add calendar days to a date key (noon anchor in TZ reduces DST drift). */
@@ -75,43 +87,61 @@ function lastDayOfMonthKey(year: number, month: number): string {
 }
 
 /**
- * Compute D+1 daily, weekend weekly (Sat anchor; also due Sunday), and month-end monthly.
+ * Closing Sunday of the Mon–Sun week that contains `solveKey`.
+ * Solves on Sunday use that same Sunday as the batch opener.
+ */
+export function weekClosingSundayForSolve(solveKey: string, timeZone: string): string {
+  const dow = getDayOfWeekForDateKey(solveKey, timeZone);
+  if (dow === 0) return solveKey;
+  return addCalendarDays(solveKey, 7 - dow, timeZone);
+}
+
+/** Sunday when a weekly batch graduates into the monthly archive. */
+export function weeklyRolloverSunday(weeklyBatchSunday: string, timeZone: string): string {
+  return addCalendarDays(weeklyBatchSunday, 8, timeZone);
+}
+
+/**
+ * Compute D+1 daily, week-closing Sunday weekly, and rollover Sunday monthly.
  */
 export function computeRevisionSchedules(solvedAt: Date, timeZone: string): RevisionScheduleDates {
   const solveKey = toDateKey(solvedAt, timeZone);
   const daily = addCalendarDays(solveKey, 1, timeZone);
-
-  const dow = getDayOfWeek(solvedAt, timeZone);
-  let weekly: string;
-  if (dow === 6) {
-    // Same-weekend anchor: due this Saturday (and Sunday via isWeeklyDueOnDate).
-    weekly = solveKey;
-  } else if (dow === 0) {
-    // Sunday solve → previous Saturday anchor (still due that Sunday).
-    weekly = addCalendarDays(solveKey, -1, timeZone);
-  } else {
-    weekly = addCalendarDays(solveKey, 6 - dow, timeZone);
-  }
-
-  const { year, month, day } = parseDateKey(solveKey);
-  const monthLast = daysInMonth(year, month);
-  let monthly: string;
-  if (day === monthLast) {
-    const nextMonth = month === 12 ? 1 : month + 1;
-    const nextYear = month === 12 ? year + 1 : year;
-    monthly = lastDayOfMonthKey(nextYear, nextMonth);
-  } else {
-    monthly = lastDayOfMonthKey(year, month);
-  }
-
+  const weekly = weekClosingSundayForSolve(solveKey, timeZone);
+  const monthly = weeklyRolloverSunday(weekly, timeZone);
   return { daily, weekly, monthly };
 }
 
-/** Weekly row is due on its Saturday or the following Sunday (same weekend). */
-export function isWeeklyDueOnDate(weeklyScheduledFor: string, todayKey: string, timeZone: string): boolean {
-  if (weeklyScheduledFor === todayKey) return true;
-  const sunday = addCalendarDays(weeklyScheduledFor, 1, timeZone);
-  return sunday === todayKey;
+/**
+ * Weekly batch is visible from its closing Sunday through the following Saturday
+ * (inclusive). On the rollover Sunday it moves to Monthly.
+ */
+export function isWeeklyVisible(weeklyBatchSunday: string, todayKey: string, timeZone: string): boolean {
+  if (todayKey < weeklyBatchSunday) return false;
+  const rollover = weeklyRolloverSunday(weeklyBatchSunday, timeZone);
+  return todayKey < rollover;
+}
+
+/** @deprecated Use isWeeklyVisible — kept for transitional imports. */
+export function isWeeklyDueOnDate(weeklyBatchSunday: string, todayKey: string, timeZone: string): boolean {
+  return isWeeklyVisible(weeklyBatchSunday, todayKey, timeZone);
+}
+
+/** Monthly archive row is visible on/after its rollover Sunday. */
+export function isMonthlyVisible(monthlyScheduledFor: string, todayKey: string): boolean {
+  return todayKey >= monthlyScheduledFor;
+}
+
+/** Prisma date bounds for weekly rows active on `todayKey` (closing Sun → following Sat). */
+export function weeklyVisibleScheduledForRange(
+  todayKey: string,
+  timeZone: string,
+): { gt: Date; lte: Date } {
+  const after = addCalendarDays(todayKey, -8, timeZone);
+  return {
+    gt: new Date(`${after}T00:00:00.000Z`),
+    lte: new Date(`${todayKey}T00:00:00.000Z`),
+  };
 }
 
 export function weekRangeForOffset(weekOffset: number, timeZone: string, reference = new Date()): {

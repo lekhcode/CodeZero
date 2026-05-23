@@ -114,6 +114,12 @@ export async function overdueRevisions(req: Request, res: Response): Promise<voi
   ApiResponse.success(res, { revisions });
 }
 
+export async function solvedTodayRevisions(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const revisions = await revisionService.listSolvedTodayRevisions(userId);
+  ApiResponse.success(res, { revisions });
+}
+
 export async function completeRevision(req: Request, res: Response): Promise<void> {
   const userId = requireUserId(req);
   const { id } = req.params as { id: string };
