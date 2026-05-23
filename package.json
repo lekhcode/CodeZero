@@ -32,6 +32,7 @@
     "test:search": "tsx src/modules/leetcode/problemSearch.utils.test.ts",
     "test:judge:compare": "tsx src/compiler/judge/judgeOutputCompare.test.ts",
     "test:streak": "tsx src/modules/submissions/streak.utils.test.ts",
+    "test:auto-revision": "tsx src/modules/autoRevisions/autoRevision.schedule.test.ts",
     "refresh:examples": "tsx scripts/refresh-problem-examples.ts",
     "judge:benchmark": "tsx scripts/judge-benchmark.ts",
     "refresh:examples:plans": "tsx scripts/refresh-problem-examples.ts -- --plans=blind-75,top-interview-150",

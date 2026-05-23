@@ -84,9 +84,11 @@ export function computeRevisionSchedules(solvedAt: Date, timeZone: string): Revi
   const dow = getDayOfWeek(solvedAt, timeZone);
   let weekly: string;
   if (dow === 6) {
-    weekly = addCalendarDays(solveKey, 7, timeZone);
+    // Same-weekend anchor: due this Saturday (and Sunday via isWeeklyDueOnDate).
+    weekly = solveKey;
   } else if (dow === 0) {
-    weekly = addCalendarDays(solveKey, 6, timeZone);
+    // Sunday solve → previous Saturday anchor (still due that Sunday).
+    weekly = addCalendarDays(solveKey, -1, timeZone);
   } else {
     weekly = addCalendarDays(solveKey, 6 - dow, timeZone);
   }

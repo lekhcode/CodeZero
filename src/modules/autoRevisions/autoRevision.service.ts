@@ -1,4 +1,5 @@
 import { AutoRevisionType, type DifficultyLevel, type Prisma } from "@prisma/client";
+import { env } from "../../config/env.js";
 import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../utils/ApiError.js";
 import {
@@ -130,7 +131,13 @@ export async function logAutoRevision(input: LogAutoRevisionInput): Promise<{ cr
 
 /** Fire-and-forget entry from judge worker — never throws to caller. */
 export async function logAutoRevisionFromSolve(userId: string, problemId: string): Promise<void> {
-  await logAutoRevision({ userId, problemId, timezone: DEFAULT_TZ });
+  const prior = await prisma.autoRevision.findFirst({
+    where: { userId },
+    orderBy: { updatedAt: "desc" },
+    select: { scheduleTimezone: true },
+  });
+  const timezone = prior?.scheduleTimezone ?? env.DAILY_POTD_CRON.timezone;
+  await logAutoRevision({ userId, problemId, timezone });
 }
 
 async function fetchRows(
