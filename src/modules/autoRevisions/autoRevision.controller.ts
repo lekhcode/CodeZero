@@ -62,3 +62,46 @@ export async function markRevised(req: Request, res: Response): Promise<void> {
   const row = await autoRevisionService.markAutoRevisionRevised(userId, id);
   ApiResponse.success(res, { revision: row });
 }
+
+export async function feed(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const status = req.query["status"];
+  const period = req.query["period"];
+  const topic = req.query["topic"];
+  const search = req.query["search"];
+  const sort = req.query["sort"];
+  const data = await autoRevisionService.getRevisionFeed(userId, queryTimezone(req), {
+    ...(typeof status === "string" ? { status: status as "pending" | "completed" | "all" } : {}),
+    ...(typeof period === "string" ? { period: period as "all" | "today" | "week" | "month" } : {}),
+    ...(typeof topic === "string" ? { topic } : {}),
+    ...(typeof search === "string" ? { search } : {}),
+    ...(typeof sort === "string"
+      ? { sort: sort as "priority" | "due" | "title" | "difficulty" }
+      : {}),
+  });
+  ApiResponse.success(res, data);
+}
+
+export async function history(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const page = Number(req.query["page"] ?? 1);
+  const limit = Number(req.query["limit"] ?? 50);
+  const from = req.query["from"];
+  const to = req.query["to"];
+  const date = req.query["date"];
+  const data = await autoRevisionService.getRevisionHistory(userId, queryTimezone(req), {
+    page,
+    limit,
+    ...(typeof from === "string" ? { from } : {}),
+    ...(typeof to === "string" ? { to } : {}),
+    ...(typeof date === "string" ? { date } : {}),
+  });
+  ApiResponse.success(res, data);
+}
+
+export async function activity(req: Request, res: Response): Promise<void> {
+  const userId = requireUserId(req);
+  const months = Number(req.query["months"] ?? 6);
+  const data = await autoRevisionService.getRevisionActivity(userId, queryTimezone(req), months);
+  ApiResponse.success(res, data);
+}

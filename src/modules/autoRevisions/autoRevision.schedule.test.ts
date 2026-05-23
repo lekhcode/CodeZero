@@ -1,7 +1,8 @@
 import {
+  addCalendarDays,
   computeRevisionSchedules,
-  isWeeklyDueOnDate,
-  weekRangeForOffset,
+  isWeeklyVisible,
+  weekClosingSundayForSolve,
 } from "./autoRevision.schedule.js";
 
 const TZ = "Asia/Kolkata";
@@ -14,47 +15,48 @@ function solveAt(iso: string): Date {
   return new Date(iso);
 }
 
-/** Saturday solve → weekly anchor is that Saturday, inside "this week". */
+/** Monday solve → daily Tuesday; weekly opens that week's Sunday. */
 {
-  const solvedAt = solveAt("2026-05-23T10:00:00+05:30");
+  const solvedAt = solveAt("2026-05-18T10:00:00+05:30"); // Monday
   const schedules = computeRevisionSchedules(solvedAt, TZ);
-  const week = weekRangeForOffset(0, TZ, solvedAt);
-  assert(
-    schedules.weekly >= week.start && schedules.weekly <= week.end,
-    `Saturday weekly ${schedules.weekly} should fall in ${week.start}–${week.end}`,
-  );
-  assert(schedules.weekly === "2026-05-23", `expected 2026-05-23, got ${schedules.weekly}`);
-  assert(
-    isWeeklyDueOnDate(schedules.weekly, "2026-05-23", TZ),
-    "weekly due on anchor Saturday",
-  );
-  assert(
-    isWeeklyDueOnDate(schedules.weekly, "2026-05-24", TZ),
-    "weekly due on Sunday after anchor Saturday",
-  );
+  assert(schedules.daily === "2026-05-19", `daily got ${schedules.daily}`);
+  assert(schedules.weekly === "2026-05-24", `weekly got ${schedules.weekly}`);
+  assert(schedules.monthly === "2026-06-01", `monthly got ${schedules.monthly}`);
+  assert(!isWeeklyVisible(schedules.weekly, "2026-05-20", TZ), "not visible before Sunday");
+  assert(isWeeklyVisible(schedules.weekly, "2026-05-24", TZ), "visible on closing Sunday");
+  assert(isWeeklyVisible(schedules.weekly, "2026-05-30", TZ), "visible through next Saturday");
+  assert(!isWeeklyVisible(schedules.weekly, "2026-06-01", TZ), "rolls to monthly on rollover Sunday");
 }
 
-/** Friday solve → upcoming Saturday in the same ISO week. */
+/** Friday solve → weekly opens upcoming Sunday of same week. */
 {
   const solvedAt = solveAt("2026-05-22T18:00:00+05:30");
   const schedules = computeRevisionSchedules(solvedAt, TZ);
-  const week = weekRangeForOffset(0, TZ, solvedAt);
-  assert(schedules.weekly === "2026-05-23", `Friday anchor got ${schedules.weekly}`);
-  assert(
-    schedules.weekly >= week.start && schedules.weekly <= week.end,
-    "Friday weekly in current week",
-  );
+  assert(schedules.weekly === "2026-05-24", `Friday weekly got ${schedules.weekly}`);
 }
 
-/** Sunday solve → previous Saturday anchor, still due that Sunday. */
+/** Sunday solve → batch opens that Sunday. */
 {
   const solvedAt = solveAt("2026-05-24T09:00:00+05:30");
   const schedules = computeRevisionSchedules(solvedAt, TZ);
-  assert(schedules.weekly === "2026-05-23", `Sunday anchor got ${schedules.weekly}`);
+  assert(schedules.weekly === "2026-05-24", `Sunday weekly got ${schedules.weekly}`);
+  assert(isWeeklyVisible(schedules.weekly, "2026-05-24", TZ), "visible on solve Sunday");
+}
+
+/** weekClosingSundayForSolve matches computeRevisionSchedules weekly anchor. */
+{
+  const key = "2026-05-20";
   assert(
-    isWeeklyDueOnDate(schedules.weekly, "2026-05-24", TZ),
-    "Sunday solve due on solve Sunday",
+    weekClosingSundayForSolve(key, TZ) === "2026-05-24",
+    "Wed solve closes on Sunday",
   );
+}
+
+/** Daily is always solve + 1 day. */
+{
+  const solvedAt = solveAt("2026-05-23T10:00:00+05:30");
+  const schedules = computeRevisionSchedules(solvedAt, TZ);
+  assert(schedules.daily === addCalendarDays("2026-05-23", 1, TZ), "daily is D+1");
 }
 
 console.log("autoRevision.schedule.test.ts: ok");

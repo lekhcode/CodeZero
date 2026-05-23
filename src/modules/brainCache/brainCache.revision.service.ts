@@ -195,6 +195,22 @@ export async function listTodayRevisions(userId: string): Promise<BrainCacheRevi
   return rows.map(mapTaskRow);
 }
 
+/** Revisions marked complete today (UTC calendar day). */
+export async function listSolvedTodayRevisions(userId: string): Promise<BrainCacheRevisionTaskDto[]> {
+  const today = startOfUtcDay(new Date());
+  const tomorrow = addUtcDays(today, 1);
+  const rows = await prisma.brainCacheRevisionTask.findMany({
+    where: {
+      userId,
+      status: BrainCacheRevisionStatus.COMPLETED,
+      completedAt: { gte: today, lt: tomorrow },
+    },
+    include: taskInclude,
+    orderBy: [{ completedAt: "desc" }],
+  });
+  return rows.map(mapTaskRow);
+}
+
 export async function listOverdueRevisions(userId: string): Promise<BrainCacheRevisionTaskDto[]> {
   await refreshOpenRevisionStatuses(userId);
   const today = startOfUtcDay(new Date());

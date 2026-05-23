@@ -74,6 +74,7 @@ brainCacheRouter.get(
 
 brainCacheRouter.get("/revisions/today", asyncHandler(brainCacheController.todayRevisions));
 brainCacheRouter.get("/revisions/overdue", asyncHandler(brainCacheController.overdueRevisions));
+brainCacheRouter.get("/revisions/solved-today", asyncHandler(brainCacheController.solvedTodayRevisions));
 brainCacheRouter.patch(
   "/revisions/:id/complete",
   validateParams(revisionIdParamsSchema),
