@@ -184,6 +184,10 @@ public final class Judge {
     }
     if (v instanceof String) return JSONObject.quote((String) v);
     if (c.isArray()) return new JSONArray(v).toString();
+    if (v instanceof java.util.Collection) {
+      Object jv = jsonLeaf(v);
+      if (jv instanceof JSONArray) return ((JSONArray) jv).toString();
+    }
     return toJa(v).toString();
   }
 

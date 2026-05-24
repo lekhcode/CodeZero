@@ -7,7 +7,7 @@ import { buildSecureDockerRunArgs } from "../docker/dockerArgs.js";
 import { createExecutionWorkspace } from "../sandbox/workspace.js";
 import { compilerLogger } from "../utils/logger.js";
 import { truncateOutput } from "../utils/truncate.js";
-import { relaxJudgeTestResults } from "./judgeOutputCompare.js";
+import { normalizeJudgeHarnessResults, relaxJudgeTestResults } from "./judgeOutputCompare.js";
 import { materializeJudgeWorkspace, type JudgeCasePayload } from "./writeJudgeWorkspace.js";
 import type { ArgHintRow } from "./argCodegen.js";
 import { readPhaseTimings } from "./readPhaseTimings.js";
@@ -182,6 +182,7 @@ export async function executeJudgeInDocker(params: {
       results = [];
     }
 
+    results = normalizeJudgeHarnessResults(results, params.cases);
     results = relaxJudgeTestResults(results, params.cases);
 
     const phases = await readPhaseTimings(workspace.hostPath, outputs.stdout);
