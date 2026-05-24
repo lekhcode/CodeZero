@@ -3,6 +3,10 @@
  * Accepts alternate correct answers when the testcase is valid but stored indices/order differ.
  */
 
+import {
+  coalesceSpuriousSingleElementWrapper,
+  normalizeHarnessActualString,
+} from "./judgeValueNormalize.js";
 import type { JudgeCasePayload } from "./writeJudgeWorkspace.js";
 
 export type RelaxableJudgeCase = {
@@ -90,27 +94,7 @@ function twoSumArgsPattern(args: unknown[]): { nums: number[]; target: number } 
   return { nums, target: args[1] };
 }
 
-/**
- * Legacy Java harness wrapped {@code List} as a single JSON element: {@code [[1,2,3]]} vs {@code [1,2,3]}.
- */
-export function unwrapJavaListSerialization(actual: unknown, expected: unknown): unknown {
-  if (toNumberArray(expected) === null) return actual;
-  if (!Array.isArray(actual) || actual.length !== 1) return actual;
-  const innerNums = toNumberArray(actual[0]);
-  if (innerNums === null) return actual;
-  return innerNums;
-}
-
-export function normalizeNestedListActualString(actualRaw: string, expectedRaw: string): string {
-  const expected = parseJson(expectedRaw);
-  const actual = parseJson(actualRaw);
-  if (expected === undefined || actual === undefined) return actualRaw;
-  const unwrapped = unwrapJavaListSerialization(actual, expected);
-  if (unwrapped === actual) return actualRaw;
-  return JSON.stringify(unwrapped);
-}
-
-/** Fix {@code actual} strings and re-mark pass when only the List wrapper differed. */
+/** Re-serialize harness {@code actual} when a stale Java worker still emitted spurious array wrapping. */
 export function normalizeJudgeHarnessResults<T extends RelaxableJudgeCase>(
   results: T[],
   cases: JudgeCasePayload[],
@@ -118,7 +102,7 @@ export function normalizeJudgeHarnessResults<T extends RelaxableJudgeCase>(
   return results.map((r) => {
     const tc = cases[r.index];
     if (tc === undefined || r.actual === undefined || r.actual.trim() === "") return r;
-    const normalized = normalizeNestedListActualString(r.actual, tc.expected);
+    const normalized = normalizeHarnessActualString(r.actual, tc.expected);
     if (normalized === r.actual) return r;
     const inputJson =
       typeof (r as { inputPreview?: string }).inputPreview === "string"
@@ -141,7 +125,7 @@ export function outputsMatch(inputJson: string, expectedRaw: string, actualRaw: 
   if (expected === undefined || actual === undefined) {
     return expectedRaw.trim() === actualRaw.trim();
   }
-  actual = unwrapJavaListSerialization(actual, expected);
+  actual = coalesceSpuriousSingleElementWrapper(actual, expected);
   if (deepEqualJson(actual, expected)) {
     return true;
   }

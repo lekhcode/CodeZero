@@ -1,10 +1,6 @@
 import assert from "node:assert/strict";
-import {
-  normalizeJudgeHarnessResults,
-  normalizeNestedListActualString,
-  outputsMatch,
-  relaxJudgeTestResults,
-} from "./judgeOutputCompare.js";
+import { normalizeHarnessActualString } from "./judgeValueNormalize.js";
+import { normalizeJudgeHarnessResults, outputsMatch, relaxJudgeTestResults } from "./judgeOutputCompare.js";
 import type { JudgeCasePayload } from "./writeJudgeWorkspace.js";
 
 const twoSumInput = '{"args":[[1,5,3,7],8]}';
@@ -44,7 +40,7 @@ const relaxed = relaxJudgeTestResults(
 assert.equal(relaxed[0]!.passed, true);
 
 assert.equal(
-  normalizeNestedListActualString("[[1,2,3,6,9,8,7,4,5]]", "[1,2,3,6,9,8,7,4,5]"),
+  normalizeHarnessActualString("[[1,2,3,6,9,8,7,4,5]]", "[1,2,3,6,9,8,7,4,5]"),
   "[1,2,3,6,9,8,7,4,5]",
 );
 assert.equal(outputsMatch('{"args":[[[1,2,3],[4,5,6],[7,8,9]]]}', "[1,2,3,6,9,8,7,4,5]", "[[1,2,3,6,9,8,7,4,5]]"), true);

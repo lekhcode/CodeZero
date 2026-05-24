@@ -31,6 +31,8 @@
     "test:parser": "tsx src/modules/leetcode/leetcode.parser.test.ts",
     "test:search": "tsx src/modules/leetcode/problemSearch.utils.test.ts",
     "test:judge:compare": "tsx src/compiler/judge/judgeOutputCompare.test.ts",
+    "test:judge:normalize": "tsx src/compiler/judge/judgeValueNormalize.test.ts",
+    "test:judge:java-serialize": "tsx scripts/test-java-judge-serialize.ts",
     "test:streak": "tsx src/modules/submissions/streak.utils.test.ts",
     "test:auto-revision": "tsx src/modules/autoRevisions/autoRevision.schedule.test.ts",
     "refresh:examples": "tsx scripts/refresh-problem-examples.ts",
