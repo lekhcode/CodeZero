@@ -87,6 +87,23 @@ public final class Judge {
     return o;
   }
 
+  /** Flatten List/Collection returns into JSON arrays (not [[elements]]). */
+  static Object jsonLeaf(Object v) {
+    if (v == null || JSONObject.NULL.equals(v)) return JSONObject.NULL;
+    if (v instanceof Number || v instanceof Boolean || v instanceof String || v instanceof Character) {
+      return v;
+    }
+    if (v instanceof JSONArray) return v;
+    Class<?> c = v.getClass();
+    if (c.isArray()) return new JSONArray(v);
+    if (v instanceof java.util.Collection) {
+      JSONArray a = new JSONArray();
+      for (Object el : (java.util.Collection<?>) v) a.put(jsonLeaf(el));
+      return a;
+    }
+    return v;
+  }
+
   static JSONArray toJa(Object v) {
     if (v == null) {
       JSONArray z = new JSONArray();
@@ -94,10 +111,10 @@ public final class Judge {
       return z;
     }
     if (v instanceof JSONArray) return (JSONArray) v;
-    Class<?> c = v.getClass();
-    if (c.isArray()) return new JSONArray(v);
+    Object jv = jsonLeaf(v);
+    if (jv instanceof JSONArray) return (JSONArray) jv;
     JSONArray a = new JSONArray();
-    a.put(v);
+    a.put(jv);
     return a;
   }
 
