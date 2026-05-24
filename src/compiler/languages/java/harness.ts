@@ -87,8 +87,12 @@ public final class Judge {
     return o;
   }
 
-  /** Flatten List/Collection returns into JSON arrays (not [[elements]]). */
-  static Object jsonLeaf(Object v) {
+  /**
+   * Canonical JSON value for a Java return value.
+   * Collections (List, Set, etc.) become JSON arrays; nested collections become nested arrays.
+   * Scalars stay scalars — {@code toJsonArray} wraps them for comparison when needed.
+   */
+  static Object toJsonValue(Object v) {
     if (v == null || JSONObject.NULL.equals(v)) return JSONObject.NULL;
     if (v instanceof Number || v instanceof Boolean || v instanceof String || v instanceof Character) {
       return v;
@@ -98,20 +102,21 @@ public final class Judge {
     if (c.isArray()) return new JSONArray(v);
     if (v instanceof java.util.Collection) {
       JSONArray a = new JSONArray();
-      for (Object el : (java.util.Collection<?>) v) a.put(jsonLeaf(el));
+      for (Object el : (java.util.Collection<?>) v) a.put(toJsonValue(el));
       return a;
     }
     return v;
   }
 
-  static JSONArray toJa(Object v) {
+  /** Wrap scalar expected/actual in a one-element array for {@code similar} compare. */
+  static JSONArray toJsonArray(Object v) {
     if (v == null) {
       JSONArray z = new JSONArray();
       z.put(JSONObject.NULL);
       return z;
     }
     if (v instanceof JSONArray) return (JSONArray) v;
-    Object jv = jsonLeaf(v);
+    Object jv = toJsonValue(v);
     if (jv instanceof JSONArray) return (JSONArray) jv;
     JSONArray a = new JSONArray();
     a.put(jv);
@@ -119,13 +124,11 @@ public final class Judge {
   }
 
   static boolean cmp(Object exp, Object got) {
-    JSONArray a = toJa(exp);
-    JSONArray b = toJa(got);
-    return a.similar(b);
+    return toJsonArray(exp).similar(toJsonArray(got));
   }
 
   static int[] toIntPair(Object exp) {
-    JSONArray a = toJa(exp);
+    JSONArray a = toJsonArray(exp);
     if (a.length() != 2) return null;
     return new int[] { a.getInt(0), a.getInt(1) };
   }
@@ -170,79 +173,13 @@ public final class Judge {
     return isValidTwoSumPair(nums, target, act) && isValidTwoSumPair(nums, target, expPair);
   }
 
-  static String jsonDisplay(Object v) {
+  static String jsonSerialize(Object v) {
     if (v == null) return "null";
-    if (v instanceof int[]) return jsonInt1d((int[]) v);
-    if (v instanceof long[]) return jsonLong1d((long[]) v);
-    if (v instanceof double[]) return jsonDouble1d((double[]) v);
-    if (v instanceof boolean[]) return jsonBool1d((boolean[]) v);
-    if (v instanceof int[][]) return jsonInt2d((int[][]) v);
-    if (v instanceof long[][]) return jsonLong2d((long[][]) v);
-    Class<?> c = v.getClass();
-    if (v instanceof Number || v instanceof Boolean || v instanceof Character) {
-      return String.valueOf(v);
-    }
-    if (v instanceof String) return JSONObject.quote((String) v);
-    if (c.isArray()) return new JSONArray(v).toString();
-    if (v instanceof java.util.Collection) {
-      Object jv = jsonLeaf(v);
-      if (jv instanceof JSONArray) return ((JSONArray) jv).toString();
-    }
-    return toJa(v).toString();
-  }
-
-  static String jsonInt1d(int[] a) {
-    StringBuilder sb = new StringBuilder("[");
-    for (int i = 0; i < a.length; i++) {
-      if (i > 0) sb.append(',');
-      sb.append(a[i]);
-    }
-    return sb.append(']').toString();
-  }
-
-  static String jsonLong1d(long[] a) {
-    StringBuilder sb = new StringBuilder("[");
-    for (int i = 0; i < a.length; i++) {
-      if (i > 0) sb.append(',');
-      sb.append(a[i]);
-    }
-    return sb.append(']').toString();
-  }
-
-  static String jsonDouble1d(double[] a) {
-    StringBuilder sb = new StringBuilder("[");
-    for (int i = 0; i < a.length; i++) {
-      if (i > 0) sb.append(',');
-      sb.append(a[i]);
-    }
-    return sb.append(']').toString();
-  }
-
-  static String jsonBool1d(boolean[] a) {
-    StringBuilder sb = new StringBuilder("[");
-    for (int i = 0; i < a.length; i++) {
-      if (i > 0) sb.append(',');
-      sb.append(a[i]);
-    }
-    return sb.append(']').toString();
-  }
-
-  static String jsonInt2d(int[][] mx) {
-    StringBuilder sb = new StringBuilder("[");
-    for (int r = 0; r < mx.length; r++) {
-      if (r > 0) sb.append(',');
-      sb.append(jsonInt1d(mx[r]));
-    }
-    return sb.append(']').toString();
-  }
-
-  static String jsonLong2d(long[][] mx) {
-    StringBuilder sb = new StringBuilder("[");
-    for (int r = 0; r < mx.length; r++) {
-      if (r > 0) sb.append(',');
-      sb.append(jsonLong1d(mx[r]));
-    }
-    return sb.append(']').toString();
+    Object jv = toJsonValue(v);
+    if (jv instanceof JSONArray) return ((JSONArray) jv).toString();
+    if (jv == JSONObject.NULL) return "null";
+    if (jv instanceof String) return JSONObject.quote((String) jv);
+    return String.valueOf(jv);
   }
 
   static String stack(Throwable t) {
@@ -276,7 +213,7 @@ public final class Judge {
         Object exp = new JSONTokener(tc.getString("expected")).nextValue();
         boolean ok = cmp(exp, got) || relaxedMatch(args, exp, got);
         cell.put("passed", ok);
-        cell.put("actual", jsonDisplay(got));
+        cell.put("actual", jsonSerialize(got));
         cell.put("expected", tc.getString("expected"));
         cell.put(
             "inputPreview",
