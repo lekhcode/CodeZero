@@ -91,14 +91,57 @@ function twoSumArgsPattern(args: unknown[]): { nums: number[]; target: number } 
 }
 
 /**
+ * Legacy Java harness wrapped {@code List} as a single JSON element: {@code [[1,2,3]]} vs {@code [1,2,3]}.
+ */
+export function unwrapJavaListSerialization(actual: unknown, expected: unknown): unknown {
+  if (toNumberArray(expected) === null) return actual;
+  if (!Array.isArray(actual) || actual.length !== 1) return actual;
+  const innerNums = toNumberArray(actual[0]);
+  if (innerNums === null) return actual;
+  return innerNums;
+}
+
+export function normalizeNestedListActualString(actualRaw: string, expectedRaw: string): string {
+  const expected = parseJson(expectedRaw);
+  const actual = parseJson(actualRaw);
+  if (expected === undefined || actual === undefined) return actualRaw;
+  const unwrapped = unwrapJavaListSerialization(actual, expected);
+  if (unwrapped === actual) return actualRaw;
+  return JSON.stringify(unwrapped);
+}
+
+/** Fix {@code actual} strings and re-mark pass when only the List wrapper differed. */
+export function normalizeJudgeHarnessResults<T extends RelaxableJudgeCase>(
+  results: T[],
+  cases: JudgeCasePayload[],
+): T[] {
+  return results.map((r) => {
+    const tc = cases[r.index];
+    if (tc === undefined || r.actual === undefined || r.actual.trim() === "") return r;
+    const normalized = normalizeNestedListActualString(r.actual, tc.expected);
+    if (normalized === r.actual) return r;
+    const inputJson =
+      typeof (r as { inputPreview?: string }).inputPreview === "string"
+        ? (r as { inputPreview?: string }).inputPreview!
+        : tc.input;
+    const passed =
+      r.passed ||
+      deepEqualJson(parseJson(normalized), parseJson(tc.expected)) ||
+      outputsMatch(inputJson, tc.expected, normalized);
+    return { ...r, actual: normalized, passed };
+  });
+}
+
+/**
  * True when `actual` is an acceptable answer for this testcase (strict match already failed).
  */
 export function outputsMatch(inputJson: string, expectedRaw: string, actualRaw: string): boolean {
   const expected = parseJson(expectedRaw);
-  const actual = parseJson(actualRaw);
+  let actual = parseJson(actualRaw);
   if (expected === undefined || actual === undefined) {
     return expectedRaw.trim() === actualRaw.trim();
   }
+  actual = unwrapJavaListSerialization(actual, expected);
   if (deepEqualJson(actual, expected)) {
     return true;
   }
