@@ -13,6 +13,7 @@ import { brainCacheRouter } from "../modules/brainCache/brainCache.routes.js";
 import { dueCalendarRouter } from "../modules/dueCalendar/dueCalendar.routes.js";
 import { autoRevisionsRouter } from "../modules/autoRevisions/autoRevision.routes.js";
 import { forumRouter } from "../modules/forum/forum.routes.js";
+import { interviewerRouter } from "../modules/interviewer/interviewer.routes.js";
 import { compilerRouter } from "../compiler/api/compiler.routes.js";
 import { problemByIdAdminRouter } from "../compiler/api/adminJudge.routes.js";
 import { judgePollRouter } from "../compiler/api/judgePoll.routes.js";
@@ -46,6 +47,7 @@ apiV1.use("/brain-cache", brainCacheRouter);
 apiV1.use("/due-calendar", dueCalendarRouter);
 apiV1.use("/auto-revisions", autoRevisionsRouter);
 apiV1.use("/forum", forumRouter);
+apiV1.use("/interviewer", interviewerRouter);
 
 apiV1.use("/dev/email", emailDevRouter);
 

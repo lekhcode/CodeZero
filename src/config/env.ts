@@ -204,4 +204,14 @@ export const env = {
    * Set in `.env` to enable Postman/curl delivery checks without going through signup.
    */
   EMAIL_TEST_SECRET: (process.env["EMAIL_TEST_SECRET"] ?? "").trim(),
+  /**
+   * Local Python interviewer runtime (FastAPI). Not a paid API — loopback only by default.
+   */
+  INTERVIEWER_RUNTIME_URL: (
+    process.env["INTERVIEWER_RUNTIME_URL"] ?? "http://127.0.0.1:8100"
+  ).replace(/\/$/, ""),
+  INTERVIEWER_RUNTIME_TIMEOUT_MS: parsePositiveInt(
+    "INTERVIEWER_RUNTIME_TIMEOUT_MS",
+    120_000,
+  ),
 } as const;

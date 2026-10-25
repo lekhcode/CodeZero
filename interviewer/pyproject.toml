@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codezero-interviewer"
+version = "0.1.0"
+description = "Local, modular AI coding interviewer runtime for CodeZero (₹0 / open-weight)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "CodeZero" }]
+dependencies = [
+  "httpx>=0.27",
+  "pydantic>=2.6",
+  "pydantic-settings>=2.2",
+  "edge-tts>=6.1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23"]
+api = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "websockets>=12"]
+voice = ["edge-tts>=6.1.0"]
+
+[project.scripts]
+codezero-interviewer-smoke = "codezero_interviewer.cli.smoke:main"
+codezero-interviewer-serve = "codezero_interviewer.cli.serve:main"
+codezero-interviewer-voice-bench = "codezero_interviewer.cli.voice_bench:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
